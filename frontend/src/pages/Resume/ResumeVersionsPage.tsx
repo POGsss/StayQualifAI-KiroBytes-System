@@ -79,7 +79,7 @@ export function ResumeVersionsPage(): JSX.Element {
   }
 
   return (
-    <main aria-labelledby="versions-heading" className="mx-auto max-w-3xl">
+    <section aria-labelledby="versions-heading">
       <header className="mb-6">
         <h1 id="versions-heading" className="text-2xl font-semibold text-primary">
           Resume Versions
@@ -225,6 +225,6 @@ export function ResumeVersionsPage(): JSX.Element {
           })}
         </ul>
       ) : null}
-    </main>
+    </section>
   );
 }

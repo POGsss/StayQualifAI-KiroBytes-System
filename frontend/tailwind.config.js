@@ -13,9 +13,19 @@ export default {
           600: '#7d3fd0',
           700: '#5f2ea0',
         },
-        'accent-pink': '#ffc8dd', // Soft Pastel Pink — progress milestones, card headers
-        'accent-yellow': '#fee440', // Bright Cyber Yellow — scores, warnings, active indicators
-        'accent-green': '#00f5d4', // Electric Turquoise Green — positive metrics, success feedback
+        'accent-pink': '#ffc8dd', // Soft Pastel Pink — stat cards, progress milestones, card headers
+        'accent-yellow': '#fee440', // Bright Cyber Yellow — stat cards, scores, warnings, active indicators
+        'accent-green': '#00f5d4', // Electric Turquoise Green — stat cards, positive metrics, success feedback
+        // Surface tokens — light dashboard canvas + panels
+        canvas: '#f7f7f8', // app background behind panels
+        surface: '#ffffff', // white rounded panels
+        ink: '#1a1a1a', // near-black primary text
+      },
+      borderRadius: {
+        '2xl': '1rem',
+      },
+      boxShadow: {
+        panel: '0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04)',
       },
     },
   },

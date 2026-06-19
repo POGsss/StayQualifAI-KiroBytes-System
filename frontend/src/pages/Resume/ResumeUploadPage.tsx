@@ -76,9 +76,11 @@ export function ResumeUploadPage(): JSX.Element {
   );
 
   return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8">
+    <section aria-labelledby="scanner-heading" className="flex flex-col gap-8">
       <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold text-gray-900">ATS Resume Scanner</h1>
+        <h1 id="scanner-heading" className="text-2xl font-bold text-gray-900">
+          ATS Resume Scanner
+        </h1>
         <p className="text-gray-600">
           Upload your resume and, optionally, paste a job description to get an ATS
           compatibility score and tailored keyword suggestions.
@@ -197,6 +199,6 @@ export function ResumeUploadPage(): JSX.Element {
           </div>
         </section>
       ) : null}
-    </main>
+    </section>
   );
 }
