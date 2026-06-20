@@ -6,6 +6,11 @@ import { ResumePage } from './pages/Resume/ResumePage';
 import { ResumeBuilderPage } from './pages/Resume/ResumeBuilderPage';
 import { ResumeUploadPage } from './pages/Resume/ResumeUploadPage';
 import { ResumeVersionsPage } from './pages/Resume/ResumeVersionsPage';
+import { InterviewPage } from './pages/Interview/InterviewPage';
+import { InterviewSimulatorPage } from './pages/Interview/InterviewSimulatorPage';
+import { InterviewScorecardPage } from './pages/Interview/InterviewScorecardPage';
+import { InterviewSessionsPage } from './pages/Interview/InterviewSessionsPage';
+import { StarOrganizerPage } from './pages/Interview/StarOrganizerPage';
 
 /**
  * Root application shell.
@@ -143,16 +148,16 @@ export function App(): JSX.Element {
           <Route path="versions" element={<ResumeVersionsPage />} />
         </Route>
 
+        {/* Interview module — in-page Simulator / Scorecard / Sessions / STAR tabs */}
+        <Route path="/interview" element={<InterviewPage />}>
+          <Route index element={<Navigate to="/interview/simulator" replace />} />
+          <Route path="simulator" element={<InterviewSimulatorPage />} />
+          <Route path="scorecard" element={<InterviewScorecardPage />} />
+          <Route path="sessions" element={<InterviewSessionsPage />} />
+          <Route path="stories" element={<StarOrganizerPage />} />
+        </Route>
+
         {/* Modules shipped one at a time — placeholders for now */}
-        <Route
-          path="/interview"
-          element={
-            <ComingSoonPage
-              title="Interview Prep & Coaching"
-              description="Mock interviews, performance scorecards, and a STAR story organizer are on the way."
-            />
-          }
-        />
         <Route
           path="/jobsearch"
           element={

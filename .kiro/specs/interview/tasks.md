@@ -236,7 +236,7 @@ graph TD
     - `isLoading`/`error` set before the call; slice updated on success; prior data preserved on failure
     - _Requirements: 6.1, 6.2_
 
-- [ ] 13. Implement frontend pages, presentational components, and route wiring
+- [x] 13. Implement frontend pages, presentational components, and route wiring
   - [x] 13.1 Implement presentational components
     - `components/ScoreDial/` (0–100 dimension score dial) and `components/TierBadge/` (PASS/FAIL pill); semantic HTML, accessible labels, Tailwind utility classes and the brand palette
     - _Requirements: 5.6, 5.7_
@@ -255,11 +255,11 @@ graph TD
   - [x] 13.6 Wire Interview routes into `frontend/src/App.tsx`
     - Replace the `/interview` `ComingSoonPage` placeholder with in-page tab navigation across the Simulator / Scorecard / Sessions / STAR pages; keep the fixed sidebar module link
     - _Requirements: 6.1_
-  - [-] 13.7 Write component render tests
+  - [x] 13.7 Write component render tests
     - Example-based render tests for `ScoreDial` and `TierBadge`
     - _Requirements: 5.6, 5.7_
 
-- [ ] 14. Final checkpoint — full module
+- [x] 14. Final checkpoint — full module
   - Ensure all backend and frontend tests pass, ask the user if questions arise.
 
 ## Notes
