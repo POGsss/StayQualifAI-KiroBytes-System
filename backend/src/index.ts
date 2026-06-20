@@ -8,6 +8,7 @@ import express, {
 import { pathToFileURL } from 'node:url';
 
 import { errorHandler } from './middleware/error.js';
+import { createInterviewRouter } from './routes/interview.js';
 import { createResumeRouter } from './routes/resume.js';
 import { NotFoundError } from './utils/errors.js';
 
@@ -33,6 +34,9 @@ export function createApiRouter(): Router {
 
   // Resume module routes — final paths: `/api/v1/resume/*`.
   router.use('/resume', createResumeRouter());
+
+  // Interview module routes — final paths: `/api/v1/interview/*`.
+  router.use('/interview', createInterviewRouter());
 
   return router;
 }

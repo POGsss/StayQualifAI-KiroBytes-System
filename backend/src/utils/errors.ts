@@ -153,3 +153,18 @@ export class AiProviderError extends AppError {
   public readonly type = 'AiProviderError';
   public readonly httpStatus = 502;
 }
+
+/**
+ * Raised when a request conflicts with the current state of a resource:
+ * a STAR_Story with the same `title` already exists for the user (exact
+ * character match), or an answer is submitted to an already-answered question.
+ *
+ * The serialized `type` is the wire `code` discriminator surfaced in the API
+ * error envelope by `toApiError()`.
+ *
+ * Maps to HTTP 409 (Requirements 3.4, 7.5, 13.3).
+ */
+export class ConflictError extends AppError {
+  public readonly type = 'ConflictError';
+  public readonly httpStatus = 409;
+}
