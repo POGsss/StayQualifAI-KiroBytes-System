@@ -79,6 +79,15 @@ Each product module maps to isolated directories in both backend and frontend:
 - **Shared type mirroring**: Keep `backend/src/types/` and `frontend/src/types/` in sync for shared interfaces (duplicate rather than symlink)
 - **Single responsibility**: One file = one controller, one service, or one route group per module
 
+## Shared Platform Infrastructure vs. Module-Owned Code
+
+Some backend code is platform-wide infrastructure that every module reuses — it is NOT owned by any single module and the "no cross-module imports" rule does not apply to it:
+
+- `middleware/auth.ts` (`requireAuth`), `middleware/validate.ts` (`validate`), and `middleware/error.ts` (centralized error handler) — reused by every module's routes.
+- `utils/errors.ts` — the shared typed error hierarchy (`AppError`, `isAppError`, `toApiError`, and concrete errors like `ValidationError`, `NotFoundError`, `AuthError`, `ConflictError`, `AiProviderError`). Extend it here when a new platform error is needed.
+
+Module-owned code must NOT import another module's code. In particular, the Gemini/AI provider wrapper is **defined per module** (e.g., `interview.aiProvider.service.ts`) by reusing the same pattern (lazy client, JSON-mode generation, Zod validation, `AbortController` timeout, failure → `AiProviderError`) — a module must not import another module's AI wrapper.
+
 ## Branching Strategy
 
 | Branch Pattern | Purpose |
