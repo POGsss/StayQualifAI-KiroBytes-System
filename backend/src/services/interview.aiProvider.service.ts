@@ -64,8 +64,8 @@ import { AiProviderError } from '../utils/errors.js';
  */
 const API_KEY_ENV_VARS = [
   'GEMINI_API_KEY',
-  'GEMINI_API_KEY_FALLBACK',
-  'GEMINI_API_KEY_2',
+  'GROQ_API_KEY',
+  'OPENAI_API_KEY',
 ] as const;
 
 /** Optional comma-separated list of keys, resolved before the single-key vars. */
