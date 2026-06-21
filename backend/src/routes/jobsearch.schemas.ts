@@ -61,7 +61,7 @@ export const listingQuerySchema = z.object({
   workMode: workModeEnum.optional(),
   location: optionalFilterString,
   keyword: optionalFilterString,
-  company: optionalFilterString,
+  salaryMin: z.coerce.number().min(0).max(999_999_999).optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -144,4 +144,21 @@ export const linkedInOutreachBodySchema = z.object({
 /** Body schema for AI follow-up email generation. */
 export const followUpEmailBodySchema = z.object({
   applicationId: uuidParam,
+});
+
+// ---------------------------------------------------------------------------
+// 10. Scrape body (POST /scrape)
+// ---------------------------------------------------------------------------
+
+/** Body schema for triggering a job scrape. Optional location filter. */
+export const scrapeBodySchema = z.object({
+  location: z
+    .string()
+    .trim()
+    .min(1, 'Location must be at least 1 character')
+    .max(100, 'Location must not exceed 100 characters')
+    .refine((val) => val.trim().length > 0, {
+      message: 'Location must not be whitespace-only',
+    })
+    .optional(),
 });

@@ -52,9 +52,15 @@ import {
   generateFollowUpEmail as generateFollowUpEmailImpl,
 } from './jobsearchAiWriter.service.js';
 
+import {
+  runScrape as runScrapeImpl,
+  type IScrapeSummary,
+} from './jobsearchScraper.service.js';
+
 // Re-export input/result types so the controller can depend on the facade as
 // the single import point for the Job Search module.
 export type { IPaginationParams, IPaginatedResult } from './jobsearchListing.service.js';
+export type { IScrapeSummary } from './jobsearchScraper.service.js';
 
 // ---------------------------------------------------------------------------
 // Listing operations (Requirements 1, 2, 3)
@@ -207,3 +213,21 @@ export async function generateFollowUpEmail(
 ): Promise<string> {
   return generateFollowUpEmailImpl(supabase, userId, applicationId);
 }
+
+// ---------------------------------------------------------------------------
+// Scraper operations (Requirements 1, 2, 3, 4, 5, 7)
+// ---------------------------------------------------------------------------
+
+/**
+ * Run a job scrape: extract keywords from the user's active resume, query
+ * SerpAPI, and ingest discovered listings.
+ * Delegates to `jobsearchScraper.service`.
+ */
+export async function runScrape(
+  supabase: SupabaseClient,
+  userId: string,
+  location?: string
+): Promise<IScrapeSummary> {
+  return runScrapeImpl(supabase, userId, location);
+}
+

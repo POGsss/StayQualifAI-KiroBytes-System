@@ -107,8 +107,10 @@ function validateFilters(filters: IListingFilters): void {
   if (filters.keyword !== undefined) {
     validateFilterValue('keyword', filters.keyword);
   }
-  if (filters.company !== undefined) {
-    validateFilterValue('company', filters.company);
+  if (filters.salaryMin !== undefined) {
+    if (filters.salaryMin < 0 || filters.salaryMin > 999_999_999) {
+      throw new ValidationError('Invalid salaryMin filter: must be a positive number');
+    }
   }
 }
 
@@ -227,8 +229,8 @@ export async function getListings(
   if (filters.location !== undefined) {
     query = query.ilike('location', `%${filters.location}%`);
   }
-  if (filters.company !== undefined) {
-    query = query.ilike('company', `%${filters.company}%`);
+  if (filters.salaryMin !== undefined) {
+    query = query.gte('salary_min', filters.salaryMin);
   }
   if (filters.keyword !== undefined) {
     // Keyword searches both title AND description (OR)

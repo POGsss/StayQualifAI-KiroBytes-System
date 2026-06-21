@@ -1,3 +1,13 @@
+// Load environment variables from `.env` BEFORE any other import so that
+// modules reading `process.env` (Supabase config in `middleware/auth.ts`, the
+// Gemini key in the AI provider services) see the values at runtime. `tsx` and
+// `node` do not auto-load `.env`, so this side-effect import is required for
+// both `npm run dev` and `npm start`.
+import { config } from 'dotenv';
+
+// Load .env explicitly with override to ensure .env values win over .env.example
+config({ override: true });
+
 import express, {
   type Express,
   type Request,
@@ -8,6 +18,7 @@ import express, {
 import { pathToFileURL } from 'node:url';
 
 import { errorHandler } from './middleware/error.js';
+import { createInterviewRouter } from './routes/interview.js';
 import { createJobSearchRouter } from './routes/jobsearch.js';
 import { createResumeRouter } from './routes/resume.js';
 import { NotFoundError } from './utils/errors.js';
@@ -34,6 +45,9 @@ export function createApiRouter(): Router {
 
   // Resume module routes — final paths: `/api/v1/resume/*`.
   router.use('/resume', createResumeRouter());
+
+  // Interview module routes — final paths: `/api/v1/interview/*`.
+  router.use('/interview', createInterviewRouter());
 
   // Job Search module routes — final paths: `/api/v1/jobsearch/*`.
   router.use('/jobsearch', createJobSearchRouter());

@@ -70,7 +70,7 @@ export interface IListingFilters {
   workMode?: WorkMode;
   location?: string;
   keyword?: string;
-  company?: string;
+  salaryMin?: number;
 }
 
 export interface ICoverLetterRequest {
@@ -89,6 +89,14 @@ export interface IFollowUpEmailRequest {
 
 export interface IAiWriterResponse {
   generatedText: string;
+}
+
+export interface IScrapeSummary {
+  totalResults: number;
+  newListings: number;
+  duplicatesMerged: number;
+  skipped: number;
+  warnings?: string[];
 }
 
 // Store types (frontend-specific)

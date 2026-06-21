@@ -6,13 +6,8 @@ import type { IListingFilters, WorkMode } from '../../types/jobsearch.types';
 /**
  * FilterBar — horizontal bar of filter controls for the job listings feed.
  *
- * Provides work mode (select), location (text), keyword (text), and company
- * (text) filters. Text inputs are debounced (300 ms) before calling the parent
- * `onFilterChange` callback. Work mode changes fire immediately.
- *
- * Accessibility:
- * - All inputs have associated `<label>` elements
- * - Visible focus indicators on all interactive elements
+ * Provides work mode (select), location (text), keyword (text), and salary
+ * minimum (range slider in PHP Peso). Text inputs are debounced (300 ms).
  */
 
 interface FilterBarProps {
@@ -27,23 +22,32 @@ const WORK_MODE_OPTIONS: ReadonlyArray<{ value: '' | WorkMode; label: string }> 
   { value: 'Onsite', label: 'Onsite' },
 ];
 
+/** Salary slider range: 0 to 200,000 PHP, step 5,000 */
+const SALARY_MIN = 0;
+const SALARY_MAX = 200_000;
+const SALARY_STEP = 5_000;
+
+/** Format peso amount (e.g., 50000 → "₱50k") */
+function formatPeso(amount: number): string {
+  if (amount === 0) return 'Any';
+  if (amount >= 1000) return `₱${String(amount / 1000)}k`;
+  return `₱${String(amount)}`;
+}
+
 const DEBOUNCE_MS = 300;
 
 export function FilterBar({ filters, onFilterChange }: FilterBarProps): JSX.Element {
-  // Local state for text inputs (debounced)
   const [location, setLocation] = useState(filters.location ?? '');
   const [keyword, setKeyword] = useState(filters.keyword ?? '');
-  const [company, setCompany] = useState(filters.company ?? '');
+  const [salaryValue, setSalaryValue] = useState(filters.salaryMin ?? 0);
 
-  // Ref to track the debounce timer
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Sync local state when external filters change (e.g. reset)
   useEffect(() => {
     setLocation(filters.location ?? '');
     setKeyword(filters.keyword ?? '');
-    setCompany(filters.company ?? '');
-  }, [filters.location, filters.keyword, filters.company]);
+    setSalaryValue(filters.salaryMin ?? 0);
+  }, [filters.location, filters.keyword, filters.salaryMin]);
 
   const emitDebounced = useCallback(
     (patch: Partial<IListingFilters>, clearKey?: keyof IListingFilters) => {
@@ -61,7 +65,6 @@ export function FilterBar({ filters, onFilterChange }: FilterBarProps): JSX.Elem
     [filters, onFilterChange],
   );
 
-  // Cleanup timer on unmount
   useEffect(() => {
     return () => {
       if (debounceRef.current !== null) {
@@ -98,14 +101,22 @@ export function FilterBar({ filters, onFilterChange }: FilterBarProps): JSX.Elem
     emitDebounced(patch, 'keyword');
   };
 
-  const handleCompanyChange = (value: string): void => {
-    setCompany(value);
-    const patch: Partial<IListingFilters> = {};
-    if (value) {
-      patch.company = value;
-    }
-    emitDebounced(patch, 'company');
+  const handleSalaryChange = (value: number): void => {
+    setSalaryValue(value);
   };
+
+  const handleSalaryCommit = (): void => {
+    const updated: IListingFilters = { ...filters };
+    if (salaryValue === 0) {
+      delete updated.salaryMin;
+    } else {
+      updated.salaryMin = salaryValue;
+    }
+    onFilterChange(updated);
+  };
+
+  // Calculate slider fill percentage for styling
+  const fillPercent = ((salaryValue - SALARY_MIN) / (SALARY_MAX - SALARY_MIN)) * 100;
 
   return (
     <div className="rounded-2xl bg-white p-4 shadow-sm">
@@ -144,7 +155,7 @@ export function FilterBar({ filters, onFilterChange }: FilterBarProps): JSX.Elem
           <input
             id="filter-location"
             type="text"
-            placeholder="e.g. New York"
+            placeholder="e.g. Manila"
             value={location}
             onChange={(e) => handleLocationChange(e.target.value)}
             className="rounded-lg border border-gray-300 px-3 py-2 text-sm
@@ -171,23 +182,48 @@ export function FilterBar({ filters, onFilterChange }: FilterBarProps): JSX.Elem
           />
         </div>
 
-        {/* Company */}
-        <div className="flex flex-col gap-1">
+        {/* Salary Range Slider */}
+        <div className="flex min-w-[180px] flex-1 flex-col gap-1">
           <label
-            htmlFor="filter-company"
+            htmlFor="filter-salary"
             className="text-xs font-medium text-gray-600"
           >
-            Company
+            Min Salary: <span className="text-[#9b5de5]">{formatPeso(salaryValue)}</span>
           </label>
-          <input
-            id="filter-company"
-            type="text"
-            placeholder="e.g. Google"
-            value={company}
-            onChange={(e) => handleCompanyChange(e.target.value)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-          />
+          <div className="relative flex items-center py-1">
+            <input
+              id="filter-salary"
+              type="range"
+              min={SALARY_MIN}
+              max={SALARY_MAX}
+              step={SALARY_STEP}
+              value={salaryValue}
+              onChange={(e) => handleSalaryChange(Number(e.target.value))}
+              onMouseUp={handleSalaryCommit}
+              onTouchEnd={handleSalaryCommit}
+              onKeyUp={handleSalaryCommit}
+              className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-gray-200
+                [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4
+                [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full
+                [&::-webkit-slider-thumb]:bg-[#9b5de5] [&::-webkit-slider-thumb]:shadow-md
+                [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-125
+                [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4
+                [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0
+                [&::-moz-range-thumb]:bg-[#9b5de5] [&::-moz-range-thumb]:shadow-md
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9b5de5]/50"
+              style={{
+                background: `linear-gradient(to right, #9b5de5 0%, #9b5de5 ${String(fillPercent)}%, #e5e7eb ${String(fillPercent)}%, #e5e7eb 100%)`,
+              }}
+              aria-valuemin={SALARY_MIN}
+              aria-valuemax={SALARY_MAX}
+              aria-valuenow={salaryValue}
+              aria-valuetext={formatPeso(salaryValue)}
+            />
+          </div>
+          <div className="flex justify-between text-[10px] text-gray-400">
+            <span>₱0</span>
+            <span>₱200k</span>
+          </div>
         </div>
       </div>
     </div>

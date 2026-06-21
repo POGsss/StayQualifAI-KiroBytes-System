@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import type { JSX } from 'react';
 
+import { addApplication as addApplicationRequest } from '../../services/jobsearch.service';
 import type { IListing, WorkMode } from '../../types/jobsearch.types';
 
 /**
@@ -55,6 +57,20 @@ function formatSalary(min: number | null, max: number | null): string | null {
 export function ListingCard({ listing }: ListingCardProps): JSX.Element {
   const salary = formatSalary(listing.salaryMin, listing.salaryMax);
   const applyUrl = listing.sourceUrls.length > 0 ? listing.sourceUrls[0] : null;
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async (): Promise<void> => {
+    setSaving(true);
+    try {
+      await addApplicationRequest(listing.id);
+      setSaved(true);
+    } catch {
+      // Silently fail — button stays enabled for retry
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <article className="rounded-2xl bg-white p-5 shadow-sm">
@@ -84,9 +100,9 @@ export function ListingCard({ listing }: ListingCardProps): JSX.Element {
           <span>Posted {formatDate(listing.datePosted)}</span>
         </div>
 
-        {/* Direct apply link */}
-        {applyUrl !== null && (
-          <div className="mt-1">
+        {/* Actions: Apply + Save to Wishlist */}
+        <div className="mt-1 flex items-center gap-2">
+          {applyUrl !== null && (
             <a
               href={applyUrl}
               target="_blank"
@@ -111,8 +127,37 @@ export function ListingCard({ listing }: ListingCardProps): JSX.Element {
                 />
               </svg>
             </a>
-          </div>
-        )}
+          )}
+
+          <button
+            type="button"
+            onClick={() => void handleSave()}
+            disabled={saved || saving}
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-medium
+              transition-colors focus-visible:outline-none focus-visible:ring-2
+              focus-visible:ring-primary/50 focus-visible:ring-offset-2
+              ${saved
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700 cursor-default'
+                : 'border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50'
+              }`}
+          >
+            {saved ? (
+              <>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                Saved
+              </>
+            ) : (
+              <>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+                </svg>
+                {saving ? 'Saving…' : 'Save'}
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </article>
   );

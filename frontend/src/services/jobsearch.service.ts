@@ -21,6 +21,7 @@ import type {
   IListingFilters,
   IListingIngestInput,
   IPaginationMeta,
+  IScrapeSummary,
   Stage,
 } from '../types/jobsearch.types';
 
@@ -219,14 +220,48 @@ export async function getListings(params?: IGetListingsParams): Promise<IListing
     if (params.keyword !== undefined) {
       searchParams.set('keyword', params.keyword);
     }
-    if (params.company !== undefined) {
-      searchParams.set('company', params.company);
+    if (params.salaryMin !== undefined) {
+      searchParams.set('salaryMin', String(params.salaryMin));
     }
   }
 
   const query = searchParams.toString();
   const path = query.length > 0 ? `/listings?${query}` : '/listings';
-  return sendGet<IListingsResponse>(path);
+
+  // The backend returns listings as `data` (array) and pagination fields
+  // merged into `meta` (alongside requestId/timestamp). We need to fetch the
+  // full envelope to extract both pieces.
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_PATH}${path}`, {
+      method: 'GET',
+      headers: buildHeaders(false),
+    });
+  } catch (cause) {
+    const message = cause instanceof Error ? cause.message : 'Network request failed';
+    throw new JobSearchApiError({ type: 'network_error', message }, 0);
+  }
+
+  const envelope = await parseEnvelope<IListing[]>(response);
+
+  if (!response.ok || (envelope !== null && envelope.error !== null)) {
+    const error: IApiError =
+      envelope?.error ?? {
+        type: 'http_error',
+        message: `Request failed with status ${response.status}`,
+      };
+    throw new JobSearchApiError(error, response.status);
+  }
+
+  const listings: IListing[] = envelope?.data ?? [];
+  const meta: IPaginationMeta = {
+    totalCount: (envelope?.meta as Record<string, unknown>)?.totalCount as number ?? 0,
+    currentPage: (envelope?.meta as Record<string, unknown>)?.currentPage as number ?? 1,
+    totalPages: (envelope?.meta as Record<string, unknown>)?.totalPages as number ?? 1,
+    hasNextPage: (envelope?.meta as Record<string, unknown>)?.hasNextPage as boolean ?? false,
+  };
+
+  return { listings, meta };
 }
 
 /** POST `/listings` — ingest a new listing (with dedup). */
@@ -298,4 +333,10 @@ export async function generateLinkedInOutreach(
 /** POST `/ai/follow-up-email` — generate a follow-up email. */
 export async function generateFollowUpEmail(applicationId: string): Promise<IAiWriterResponse> {
   return sendJson<IAiWriterResponse>('/ai/follow-up-email', 'POST', { applicationId });
+}
+
+/** POST `/scrape` — trigger a resume-matched job scrape. */
+export async function scrapeJobs(location?: string): Promise<IScrapeSummary> {
+  const body = location !== undefined ? { location } : undefined;
+  return sendJson<IScrapeSummary>('/scrape', 'POST', body);
 }

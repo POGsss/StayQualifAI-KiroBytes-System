@@ -155,8 +155,8 @@ export class AiProviderError extends AppError {
 }
 
 /**
- * Raised when a duplicate resource conflict is detected — e.g. a user tries
- * to add a listing that already exists in their application tracker.
+ * Raised when a creation request would violate a uniqueness constraint
+ * (e.g. duplicate application tracking for the same user+listing pair).
  *
  * Maps to HTTP 409 (Requirement 4.4).
  */

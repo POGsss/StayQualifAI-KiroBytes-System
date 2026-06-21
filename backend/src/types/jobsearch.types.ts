@@ -71,7 +71,7 @@ export interface IListingFilters {
   workMode?: WorkMode;
   location?: string;
   keyword?: string;
-  company?: string;
+  salaryMin?: number;
 }
 
 // AI Writer types

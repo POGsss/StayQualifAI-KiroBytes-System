@@ -1,9 +1,11 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import type { JSX } from 'react';
 
+import { FindJobsButton } from '../../components/FindJobsButton';
 import { FilterBar } from '../../components/JobSearch/FilterBar';
 import { ListingCard } from '../../components/JobSearch/ListingCard';
 import { useJobSearchStore } from '../../stores/jobsearch.store';
+import { useResumeStore } from '../../stores/resume.store';
 import type { IListingFilters } from '../../types/jobsearch.types';
 
 /**
@@ -29,14 +31,22 @@ export function ListingsTab(): JSX.Element {
   const setFilters = useJobSearchStore((s) => s.setFilters);
   const setPage = useJobSearchStore((s) => s.setPage);
 
-  // Fetch listings on mount
+  const hasResume = useResumeStore((s) => s.activeVersion !== null);
+  const loadVersions = useResumeStore((s) => s.loadVersions);
+
+  // Fetch listings and resume versions on mount
   useEffect(() => {
     void fetchListings();
+    void loadVersions();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleFilterChange = (newFilters: IListingFilters): void => {
     void setFilters(newFilters);
   };
+
+  const handleScrapeComplete = useCallback((): void => {
+    void setPage(1);
+  }, [setPage]);
 
   const handlePrevPage = (): void => {
     if (listingsMeta !== null && listingsMeta.currentPage > 1) {
@@ -52,20 +62,37 @@ export function ListingsTab(): JSX.Element {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Find Jobs action */}
+      <FindJobsButton hasResume={hasResume} onScrapeComplete={handleScrapeComplete} />
+
       {/* Filter Bar */}
       <FilterBar filters={filters} onFilterChange={handleFilterChange} />
 
-      {/* Loading state */}
+      {/* Loading state — skeleton cards */}
       {status === 'loading' && (
-        <div className="flex items-center justify-center py-12">
-          <div className="flex flex-col items-center gap-3">
-            <div
-              className="h-8 w-8 animate-spin rounded-full border-4 border-primary/30 border-t-primary"
-              role="status"
-              aria-label="Loading listings"
-            />
-            <p className="text-sm text-gray-500">Loading listings…</p>
-          </div>
+        <div className="flex flex-col gap-3" aria-label="Loading listings">
+          {Array.from({ length: 5 }, (_, i) => (
+            <div key={i} className="animate-pulse rounded-2xl bg-white p-5 shadow-sm">
+              <div className="flex flex-col gap-3">
+                <div className="flex items-start justify-between">
+                  <div className="h-5 w-3/5 rounded bg-gray-200" />
+                  <div className="h-6 w-16 rounded-full bg-gray-200" />
+                </div>
+                <div className="flex gap-4">
+                  <div className="h-4 w-28 rounded bg-gray-200" />
+                  <div className="h-4 w-32 rounded bg-gray-200" />
+                </div>
+                <div className="flex gap-4">
+                  <div className="h-4 w-20 rounded bg-gray-100" />
+                  <div className="h-4 w-24 rounded bg-gray-100" />
+                </div>
+                <div className="flex gap-2">
+                  <div className="h-9 w-20 rounded-lg bg-gray-200" />
+                  <div className="h-9 w-16 rounded-lg bg-gray-200" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

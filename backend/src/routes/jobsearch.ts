@@ -30,6 +30,7 @@ import {
   generateCoverLetterHandler,
   generateLinkedInOutreachHandler,
   generateFollowUpEmailHandler,
+  scrapeHandler,
 } from '../controllers/jobsearch.controller.js';
 import { requireAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
@@ -44,6 +45,7 @@ import {
   coverLetterBodySchema,
   linkedInOutreachBodySchema,
   followUpEmailBodySchema,
+  scrapeBodySchema,
 } from './jobsearch.schemas.js';
 
 /**
@@ -142,6 +144,13 @@ export function createJobSearchRouter(): Router {
     validate({ body: followUpEmailBodySchema }),
     generateFollowUpEmailHandler
   );
+
+  // -------------------------------------------------------------------------
+  // Scraper (Job Scraper feature)
+  // -------------------------------------------------------------------------
+
+  // POST /scrape — trigger a resume-matched job scrape.
+  router.post('/scrape', requireAuth, validate({ body: scrapeBodySchema }), scrapeHandler);
 
   return router;
 }

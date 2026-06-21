@@ -35,6 +35,7 @@ import type {
   Stage,
   WorkMode,
 } from '../types/jobsearch.types.js';
+import type { IScrapeSummary } from '../services/jobsearchScraper.service.js';
 import { AuthError } from '../utils/errors.js';
 import {
   getListings as getListingsSvc,
@@ -48,9 +49,11 @@ import {
   generateCoverLetter as generateCoverLetterSvc,
   generateLinkedInOutreach as generateLinkedInOutreachSvc,
   generateFollowUpEmail as generateFollowUpEmailSvc,
+  runScrape as runScrapeSvc,
   type IPaginationParams,
   type IPaginatedResult,
 } from '../services/jobsearch.service.js';
+import { CooldownError } from '../services/jobsearchScraper.service.js';
 
 // ---------------------------------------------------------------------------
 // Envelope + narrowing helpers.
@@ -148,8 +151,11 @@ export const getListings: RequestHandler = asyncHandler(async (req, res) => {
   if (typeof req.query.keyword === 'string' && req.query.keyword.length > 0) {
     filters.keyword = req.query.keyword;
   }
-  if (typeof req.query.company === 'string' && req.query.company.length > 0) {
-    filters.company = req.query.company;
+  if (typeof req.query.salaryMin === 'string' && req.query.salaryMin.length > 0) {
+    const parsed = Number(req.query.salaryMin);
+    if (!isNaN(parsed) && parsed > 0) {
+      filters.salaryMin = parsed;
+    }
   }
 
   const pagination: IPaginationParams = { page, pageSize };
@@ -313,4 +319,49 @@ export const generateFollowUpEmailHandler: RequestHandler = asyncHandler(async (
   const result: string = await generateFollowUpEmailSvc(supabase, userId, applicationId);
   const response: IAiWriterResponse = { generatedText: result };
   res.status(200).json(successEnvelope(req, response));
+});
+
+// ---------------------------------------------------------------------------
+// Handlers — Scraper (Requirements 4, 5)
+// ---------------------------------------------------------------------------
+
+/**
+ * `POST /api/v1/jobsearch/scrape` — trigger a resume-matched job scrape
+ * (Requirements 4.1, 4.4, 4.5, 4.6, 4.7, 4.8, 5.3, 5.5).
+ *
+ * Catches {@link CooldownError} specifically to produce a 429 response with a
+ * `Retry-After` header and cooldown details in the error envelope. All other
+ * typed errors propagate to the centralized error middleware via `next(err)`.
+ */
+export const scrapeHandler: RequestHandler = asyncHandler(async (req, res) => {
+  const supabase = requireSupabase(req);
+  const userId = requireUserId(req);
+  const location = (req.body as { location?: string }).location;
+
+  try {
+    const summary: IScrapeSummary = await runScrapeSvc(supabase, userId, location);
+    res.status(200).json(successEnvelope(req, summary));
+  } catch (err: unknown) {
+    if (err instanceof CooldownError) {
+      const retryAfterSeconds = Math.ceil(err.remainingMinutes * 60);
+      res.set('Retry-After', String(retryAfterSeconds));
+      res.status(429).json({
+        data: null,
+        error: {
+          type: err.type,
+          message: err.message,
+          details: {
+            cooldownExpiresAt: err.cooldownExpiresAt,
+            remainingMinutes: err.remainingMinutes,
+          },
+        },
+        meta: {
+          requestId: resolveRequestId(req),
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+    throw err; // re-throw for centralized error middleware
+  }
 });

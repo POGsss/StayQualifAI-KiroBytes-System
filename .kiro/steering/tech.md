@@ -48,6 +48,13 @@ Supabase project ref: `mlnhocdsbwlaeqemluvp`
 - Use input validation middleware on all route handlers (validate request body, params, query)
 - Sanitize all user-provided content before storage or rendering
 
+## Authentication & Authorization
+
+- Every `/api/v1/*` route is protected by the shared `requireAuth` middleware (`backend/src/middleware/auth.ts`). It expects an `Authorization: Bearer <supabase-jwt>` header; a missing/malformed header is rejected with a typed `AuthError` (HTTP 401) before any controller runs.
+- `requireAuth` verifies the JWT, attaches `req.user`, and builds a per-request, JWT-scoped Supabase client as `req.supabase`. Services receive this client so **RLS is the source of truth for ownership** — ownership failures surface as `NotFoundError` (404), never 403, so the API never leaks the existence of another user's data.
+- Frontend service files hold a module-level token set via `setAuthToken(token)` and attach it as the `Authorization` header on every request. An authenticated Supabase session MUST call `setAuthToken(session.access_token)` (and clear it on sign-out) for any API call to succeed.
+- There is currently **no login/auth UI flow**; until one exists, frontend calls fail with 401 ("Missing or malformed Authorization header") because no token is set. Building the auth/session feature is a prerequisite for the app to function end-to-end.
+
 ## Code Style
 
 - ESLint + Prettier enforced across both packages
@@ -80,3 +87,6 @@ cd frontend && npm run test      # Run tests
 - One controller, one service, one route file per domain module — no cross-module imports
 - Database tables use `snake_case` prefixed by module (e.g., `resume_versions`, `interview_sessions`)
 - API responses follow consistent envelope: `{ data, error, meta }` shape
+- The shared typed error hierarchy lives in `backend/src/utils/errors.ts` (`AppError` base + `isAppError`/`toApiError()`); the centralized error middleware maps any typed error to the failure envelope and HTTP status. Reuse and extend this hierarchy across modules — do not define per-module error types.
+- **Error envelope discriminator**: the serialized error shape is `{ type, message, details? }` where `type` is the wire discriminator (`AppError.toApiError()` emits `type`). Some module designs refer to this field as `code`; treat `code` as a naming alias for the platform's `type` field. New code should emit/read `type` for consistency; frontend clients may read it defensively (`error.code ?? error.type`).
+- List responses set `meta.total`; single-resource and action responses set `meta` to `null` (a successful `DELETE` returns `{ data: null, error: null, meta: null }`).
