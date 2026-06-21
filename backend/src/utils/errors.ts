@@ -153,3 +153,14 @@ export class AiProviderError extends AppError {
   public readonly type = 'AiProviderError';
   public readonly httpStatus = 502;
 }
+
+/**
+ * Raised when a duplicate resource conflict is detected — e.g. a user tries
+ * to add a listing that already exists in their application tracker.
+ *
+ * Maps to HTTP 409 (Requirement 4.4).
+ */
+export class ConflictError extends AppError {
+  public readonly type = 'ConflictError';
+  public readonly httpStatus = 409;
+}

@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@supabase/server": "^1.1.0",
+    "npx": "^10.2.2",
+    "tsc": "^2.0.4",
+    "typescript": "^6.0.3"
+  }
+}

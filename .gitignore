@@ -1,1 +1,4 @@
 .kiro/settings/*
+.env
+node_modules
+.vscode

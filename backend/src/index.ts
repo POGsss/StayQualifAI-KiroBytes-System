@@ -8,6 +8,7 @@ import express, {
 import { pathToFileURL } from 'node:url';
 
 import { errorHandler } from './middleware/error.js';
+import { createJobSearchRouter } from './routes/jobsearch.js';
 import { createResumeRouter } from './routes/resume.js';
 import { NotFoundError } from './utils/errors.js';
 
@@ -33,6 +34,9 @@ export function createApiRouter(): Router {
 
   // Resume module routes — final paths: `/api/v1/resume/*`.
   router.use('/resume', createResumeRouter());
+
+  // Job Search module routes — final paths: `/api/v1/jobsearch/*`.
+  router.use('/jobsearch', createJobSearchRouter());
 
   return router;
 }

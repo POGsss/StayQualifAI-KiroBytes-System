@@ -2,6 +2,7 @@ import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import type { JSX, ReactNode } from 'react';
 
 import { ComingSoonPage } from './pages/ComingSoonPage';
+import { JobSearchPage } from './pages/JobSearch/JobSearchPage';
 import { ResumePage } from './pages/Resume/ResumePage';
 import { ResumeBuilderPage } from './pages/Resume/ResumeBuilderPage';
 import { ResumeUploadPage } from './pages/Resume/ResumeUploadPage';
@@ -153,15 +154,7 @@ export function App(): JSX.Element {
             />
           }
         />
-        <Route
-          path="/jobsearch"
-          element={
-            <ComingSoonPage
-              title="Job Discovery & Tracking"
-              description="Smart job listings, a visual application tracker, and an AI email writer are on the way."
-            />
-          }
-        />
+        <Route path="/jobsearch" element={<JobSearchPage />} />
         <Route
           path="/upskilling"
           element={
