@@ -1,3 +1,10 @@
+// Load environment variables from `.env` BEFORE any other import so that
+// modules reading `process.env` (Supabase config in `middleware/auth.ts`, the
+// Gemini key in the AI provider services) see the values at runtime. `tsx` and
+// `node` do not auto-load `.env`, so this side-effect import is required for
+// both `npm run dev` and `npm start`.
+import 'dotenv/config';
+
 import express, {
   type Express,
   type Request,
