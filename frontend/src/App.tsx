@@ -7,7 +7,7 @@ import { ResumeBuilderPage } from './pages/Resume/ResumeBuilderPage';
 import { ResumeUploadPage } from './pages/Resume/ResumeUploadPage';
 import { ResumeVersionsPage } from './pages/Resume/ResumeVersionsPage';
 import { InterviewPage } from './pages/Interview/InterviewPage';
-import { InterviewSimulatorPage } from './pages/Interview/InterviewSimulatorPage';
+import { InterviewChatPage } from './pages/Interview/InterviewChatPage';
 import { InterviewScorecardPage } from './pages/Interview/InterviewScorecardPage';
 import { InterviewSessionsPage } from './pages/Interview/InterviewSessionsPage';
 import { StarOrganizerPage } from './pages/Interview/StarOrganizerPage';
@@ -174,7 +174,7 @@ function AppModules(): JSX.Element {
         {/* Interview module — in-page Simulator / Scorecard / Sessions / STAR tabs */}
         <Route path="/interview" element={<InterviewPage />}>
           <Route index element={<Navigate to="/interview/simulator" replace />} />
-          <Route path="simulator" element={<InterviewSimulatorPage />} />
+          <Route path="simulator" element={<InterviewChatPage />} />
           <Route path="scorecard" element={<InterviewScorecardPage />} />
           <Route path="sessions" element={<InterviewSessionsPage />} />
           <Route path="stories" element={<StarOrganizerPage />} />

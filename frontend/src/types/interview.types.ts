@@ -123,3 +123,63 @@ export interface IApiError {
   message: string;
   details?: unknown;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UI Types (frontend-only)
+//
+// These types describe view/device state that never crosses the API boundary.
+// They have no backend counterpart — the type-mirroring rule does not apply.
+// Named exports, explicit shapes, no `any`.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Answering mode chosen at Session_Setup (Req 1.1, 1.3). */
+export type InterviewMode = 'text' | 'voice';
+
+/** Role of a single Chat_Message (Req 2.1). */
+export type ChatRole = 'assistant' | 'user';
+
+/**
+ * A single entry in the Chat_Thread. Derived from a session's questions and
+ * answers — NOT persisted and NOT sent to the backend (Req 2.1).
+ */
+export interface ChatMessage {
+  /** Stable key: `${questionId}:${role}`. */
+  id: string;
+  role: ChatRole;
+  /** Caption text always rendered (Req 10.1). */
+  text: string;
+  /** 1-based source question position, for ordering/keys (Req 2.2). */
+  position: number;
+}
+
+/** Result of deriving the thread from session state (Req 2.2–2.8). */
+export interface IDerivedThread {
+  messages: ChatMessage[];
+  /** Lowest-positioned unanswered question, or null when none remain (Req 2.5). */
+  currentQuestion: IInterviewQuestion | null;
+  answeredCount: number;
+  totalCount: number;
+}
+
+/** Pure speech-accumulator state for the STT reducer (Req 5.5–5.7). */
+export interface ISpeechState {
+  /** Committed, finalized transcript segments joined. */
+  finalText: string;
+  /** Current interim (not yet finalized) text. */
+  interimText: string;
+  /** True while the user intends capture to continue (drives auto-restart). */
+  capturing: boolean;
+}
+
+/** Events fed to the pure `speechReducer`. */
+export type SpeechEvent =
+  | { kind: 'start' }
+  | { kind: 'result'; finalChunk: string | null; interim: string }
+  | { kind: 'end' } // session ended (may auto-restart if still capturing)
+  | { kind: 'stop' }; // user stopped → flush interim, no restart
+
+/** Microphone permission state derived from prompt/onerror (Req 9). */
+export type SpeechPermission = 'unknown' | 'granted' | 'denied' | 'dismissed';
+
+/** Error kind reported by the SpeechRecognition API (Req 8.3, 9.3). */
+export type SpeechRecognitionErrorKind = string;
