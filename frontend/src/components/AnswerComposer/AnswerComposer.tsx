@@ -7,11 +7,12 @@
  *   - When over maxLength: shows an associated error message via aria-describedby.
  *   - On send: calls onSend(textarea.value.trim()) and clears the field.
  *
- * Voice mode (Req 5.1, 5.9, 5.11–5.13):
- *   - Embeds VoiceControls (mic toggle).
- *   - Shows live transcript from recognition.transcript as caption text while listening.
- *   - Provides an always-editable transcript input (allows typing while listening — Req 5.13).
- *   - Syncs the editable field to recognition.transcript updates from the STT engine.
+ * Voice mode (Req 5.9, 5.11–5.13):
+ *   - Primary mic control lives in VoiceStage; AnswerComposer is the editable
+ *     transcript surface only.
+ *   - Shows a "Recording" badge while the recogniser is active.
+ *   - Provides an always-editable transcript input that syncs live to
+ *     recognition.transcript while listening (Req 5.13).
  *   - On send: calls onSend(voiceText.trim()).
  *   - Send disabled when: editable transcript is empty/whitespace, length > maxLength, or isSubmitting.
  *
@@ -22,13 +23,12 @@
  * Accessibility (Req 10.7):
  *   - All validation/error messages associated via aria-describedby on the control.
  *
- * Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 5.1, 5.9, 5.11, 5.12, 5.13, 9.6, 10.7
+ * Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 5.9, 5.11, 5.12, 5.13, 9.6, 10.7
  */
 
 import { type JSX, useEffect, useId, useState } from 'react';
 import type { InterviewMode } from '../../types/interview.types';
 import type { IUseSpeechRecognition } from '../../hooks/useSpeechRecognition';
-import { VoiceControls } from '../VoiceControls';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props
@@ -152,15 +152,6 @@ export function AnswerComposer({
     }
   };
 
-  // ── Mic toggle ────────────────────────────────────────────────────────────
-  const handleMicToggle = (): void => {
-    if (recognition.isListening) {
-      recognition.stopListening();
-    } else {
-      recognition.startListening();
-    }
-  };
-
   // ── Build aria-describedby lists ──────────────────────────────────────────
   const textDescribedBy = [
     isTextOverLimit ? textErrorId : null,
@@ -268,46 +259,35 @@ export function AnswerComposer({
       ) : (
         /* ================================================================
            VOICE MODE
+           Mic toggle lives in VoiceStage. This section is the editable
+           transcript surface + Send button only.
            ================================================================ */
         <div className="flex flex-col gap-3">
-          {/* Mic controls (Req 5.1) */}
-          <div className="flex items-center gap-3">
-            <VoiceControls
-              isListening={recognition.isListening}
-              isSpeaking={false}
-              isTtsSupported={false}
-              isSttSupported={recognition.isSupported}
-              onMicToggle={handleMicToggle}
-              onReplay={() => {
-                /* replay handled by InterviewChatPage */
-              }}
-              onStop={() => {
-                /* TTS stop handled by InterviewChatPage */
-              }}
-            />
-            {recognition.isListening && (
-              <span className="text-sm text-gray-500 italic">Listening…</span>
-            )}
-          </div>
 
-          {/* Live caption while listening (Req 5.4, 5.9) */}
-          {recognition.isListening && recognition.transcript.length > 0 && (
-            <p
+          {/* Recording badge — always-visible signal while mic is active */}
+          {recognition.isListening && (
+            <div
+              role="status"
               aria-live="polite"
-              aria-atomic="false"
-              className="rounded-lg bg-[#9b5de5]/5 px-4 py-2.5 text-sm text-[#1a1a1a] border border-[#9b5de5]/20 min-h-[2.5rem]"
+              className="flex items-center gap-2 rounded-lg border border-red-100 bg-red-50 px-3 py-2"
             >
-              <span className="text-xs font-medium text-[#9b5de5] uppercase tracking-wide mr-2">
-                Live:
+              <span
+                aria-hidden="true"
+                className="inline-block h-2.5 w-2.5 flex-shrink-0 rounded-full bg-red-500 animate-pulse"
+              />
+              <span className="text-xs font-semibold text-red-700">
+                Recording in progress — speak your answer, then press{' '}
+                <strong>Stop Recording</strong> above.
               </span>
-              {recognition.transcript}
-            </p>
+            </div>
           )}
 
           {/* Editable transcript input — always visible in voice mode (Req 5.9, 5.13) */}
           <div className="flex flex-col gap-2">
             <label htmlFor="voice-transcript" className="text-xs font-medium text-gray-600">
-              Transcript{recognition.isListening ? ' (editing while recording)' : ''}
+              {recognition.isListening
+                ? 'Transcript (updating as you speak)'
+                : 'Transcript'}
             </label>
             <textarea
               id="voice-transcript"
