@@ -3,7 +3,7 @@
  *
  * Two views based on store state:
  *  - Session_Setup: mode/difficulty/count/JD/resume form, create → open → start lifecycle.
- *  - Chat_View: ChatThread, AnswerComposer, VoiceControls, progress, completion + scorecard.
+ *  - Chat_View: ChatThread, AnswerComposer, VoiceStage (orb), progress, completion + scorecard.
  *
  * Requirements: 1.1-1.9, 2.1-2.8, 4.1-4.7, 6.1-6.4, 7.1-7.6, 8.2-8.5, 9.3-9.6, 10.2-10.7
  */
@@ -15,7 +15,8 @@ import { ChatThread } from '../../components/ChatThread';
 import { ScoreDial } from '../../components/ScoreDial';
 import { SkeletonCard } from '../../components/Skeleton';
 import { TierBadge } from '../../components/TierBadge';
-import { VoiceControls } from '../../components/VoiceControls';
+import { VoiceOrb } from '../../components/VoiceOrb';
+import { VoiceStage } from '../../components/VoiceStage';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { useSpeechSynthesis } from '../../hooks/useSpeechSynthesis';
 import { useInterviewStore } from '../../stores/interview.store';
@@ -143,6 +144,38 @@ function SessionSetupForm({ isSttSupported, isLoading, onSubmit }: ISetupFormPro
           <p id={voiceDisabledId} className="mt-2 text-xs text-gray-500">
             Voice mode is not available in this browser. Text mode will be used.
           </p>
+        )}
+
+        {/* ── Voice mode preview ─────────────────────────────────────────── */}
+        {mode === 'voice' && isSttSupported && (
+          <div className="mt-4 flex flex-col items-center gap-3 rounded-2xl border border-[#e7d6f8] bg-[#f5eefc] p-5">
+            {/* Orb preview — decorative only */}
+            <VoiceOrb isActive isAISpeaking size={160} />
+
+            {/* Explain the flow concisely */}
+            <div className="flex flex-col items-center gap-2 text-center">
+              <p className="text-xs font-semibold text-[#7d3fd0]">
+                This is a preview of your voice answer panel.
+              </p>
+              <p className="max-w-xs text-xs text-gray-500">
+                After you start, the AI reads each question aloud. A large{' '}
+                <strong className="text-gray-700">Start Speaking</strong> button
+                will appear below the orb — press it to record your answer, then
+                press <strong className="text-gray-700">Stop Recording</strong> to
+                submit.
+              </p>
+            </div>
+
+            {/* Mini mockup of the recording button so there's no surprise */}
+            <div className="flex items-center gap-2 rounded-full bg-[#9b5de5] px-5 py-2.5 opacity-60">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="white" className="h-4 w-4 flex-shrink-0">
+                <path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4Z" />
+                <path d="M19 11a7 7 0 0 1-14 0H3a9 9 0 0 0 8 8.94V22h-2v2h6v-2h-2v-2.06A9 9 0 0 0 21 11h-2Z" />
+              </svg>
+              <span className="text-xs font-semibold text-white">Start Speaking</span>
+            </div>
+            <p className="text-[10px] text-gray-400">← this button will be live during your interview</p>
+          </div>
         )}
       </fieldset>
 
@@ -644,33 +677,25 @@ export function InterviewChatPage(): JSX.Element {
         )}
       </div>
 
-      {/* ── Voice TTS controls (voice mode only, Req 4.3, 4.4) ──────────── */}
+      {/* ── Voice stage: orb + tap-to-speak + status + playback (Req 4.3, 4.4, 12) ── */}
       {sessionMode === 'voice' && !isCompleted && (
-        <div className="flex items-center gap-3 rounded-xl bg-white px-4 py-3 shadow-sm">
-          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-            Playback
-          </span>
-          <VoiceControls
-            isListening={recognition.isListening}
-            isSpeaking={synthesis.isSpeaking}
-            isTtsSupported={synthesis.isSupported}
-            isSttSupported={recognition.isSupported}
-            onMicToggle={() => {
-              if (recognition.isListening) {
-                recognition.stopListening();
-              } else {
-                recognition.startListening();
-              }
-            }}
-            onReplay={handleReplay}
-            onStop={handleStop}
-          />
-          {synthesis.isSpeaking && (
-            <span className="text-xs text-gray-500 italic" aria-live="polite">
-              Reading question…
-            </span>
-          )}
-        </div>
+        <VoiceStage
+          liveTranscript={recognition.transcript}
+          isListening={recognition.isListening}
+          isSpeaking={synthesis.isSpeaking}
+          isProcessing={isSubmitting}
+          isSttSupported={recognition.isSupported}
+          isTtsSupported={synthesis.isSupported}
+          onMicToggle={() => {
+            if (recognition.isListening) {
+              recognition.stopListening();
+            } else {
+              recognition.startListening();
+            }
+          }}
+          onReplay={handleReplay}
+          onStop={handleStop}
+        />
       )}
 
       {/* ── Answer Composer (hidden when COMPLETED/SCORED — Req 7.1) ──────── */}
