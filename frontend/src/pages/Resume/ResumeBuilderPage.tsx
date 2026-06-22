@@ -212,7 +212,7 @@ export function ResumeBuilderPage(): JSX.Element {
     resumeContent !== null && versionName.trim().length > 0 && !isBusy;
 
   return (
-    <section aria-labelledby="builder-heading" className="mx-auto flex max-w-3xl flex-col gap-8">
+    <section aria-labelledby="builder-heading" className="mx-auto flex max-w-3xl flex-col gap-8 rounded-2xl bg-surface p-6 shadow-panel">
       <header className="flex flex-col gap-1">
         <h1 id="builder-heading" className="text-2xl font-semibold text-primary">
           Resume Builder

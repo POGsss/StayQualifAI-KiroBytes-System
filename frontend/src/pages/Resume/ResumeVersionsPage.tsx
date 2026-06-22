@@ -79,7 +79,7 @@ export function ResumeVersionsPage(): JSX.Element {
   }
 
   return (
-    <section aria-labelledby="versions-heading">
+    <section aria-labelledby="versions-heading" className="rounded-2xl bg-surface p-6 shadow-panel">
       <header className="mb-6">
         <h1 id="versions-heading" className="text-2xl font-semibold text-primary">
           Resume Versions

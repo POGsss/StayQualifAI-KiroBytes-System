@@ -4,8 +4,12 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        // "Now" brand typeface (see public/fonts/) with a system fallback.
+        // Bauhaus redesign typography — Inter for body, Manrope/IBM Plex Sans
+        // for headings. "Now" + system stack remain as graceful fallbacks.
         sans: [
+          'Inter',
+          'Manrope',
+          'IBM Plex Sans',
           'Now',
           'system-ui',
           '-apple-system',
@@ -13,38 +17,57 @@ export default {
           'Roboto',
           'sans-serif',
         ],
+        heading: [
+          'Manrope',
+          'IBM Plex Sans',
+          'Inter',
+          'system-ui',
+          'sans-serif',
+        ],
       },
       colors: {
-        // StayQualifAI brand palette (see steering/product.md)
+        // Bauhaus dashboard palette (see docs/GLOBAL_REDESIGN.md).
+        // `primary` now drives CTAs/active states in Bauhaus Blue so every
+        // module that references the shared token adopts the redesign.
         primary: {
-          DEFAULT: '#9b5de5', // Deep Amethyst Purple — brand accent, CTAs, selected states
-          50: '#f5eefc',
-          100: '#e7d6f8',
-          500: '#9b5de5',
-          600: '#7d3fd0',
-          700: '#5f2ea0',
+          DEFAULT: '#1E5BC6', // Bauhaus Blue — CTAs, selected/active states, focus
+          50: '#eaf1fb',
+          100: '#cfe0f6',
+          500: '#1E5BC6',
+          600: '#184ba6',
+          700: '#123a80',
         },
-        'accent-pink': '#ffc8dd', // Soft Pastel Pink — stat cards, progress milestones, card headers
-        'accent-yellow': '#fee440', // Bright Cyber Yellow — stat cards, scores, warnings, active indicators
-        'accent-green': '#00f5d4', // Electric Turquoise Green — stat cards, positive metrics, success feedback
-        // Surface tokens — light dashboard canvas + panels
-        canvas: '#f7f7f8', // app background behind panels
-        surface: '#ffffff', // white rounded panels
-        ink: '#1a1a1a', // near-black primary text
-        // Bauhaus landing palette (see Figma redesign)
+        // Bauhaus accent colors
+        'accent-blue': '#1E5BC6',
+        'accent-yellow': '#F6B800',
+        'accent-red': '#FF2B2B',
+        // Backward-compatible accent aliases (no purple): keep existing module
+        // markup working while staying on-palette.
+        'accent-pink': '#FF2B2B', // legacy pink → Bauhaus red
+        'accent-green': '#1E5BC6', // legacy turquoise → Bauhaus blue
+        // Surface tokens — Bauhaus light workspace + white cards + dark sidebar
+        canvas: '#F5F5F5', // app/workspace background behind cards
+        surface: '#FFFFFF', // white rounded cards/panels
+        ink: '#111111', // primary near-black text
+        muted: '#6B6B6B', // secondary text
+        sidebar: '#121212', // dark sidebar background
+        // Explicit Bauhaus palette namespace (landing + accents)
         bauhaus: {
-          blue: '#0e4cb0',
-          red: '#ee1b24',
-          yellow: '#febe00',
-          ink: '#1d1d1d',
-          bg: '#f0f0f0',
+          blue: '#1E5BC6',
+          red: '#FF2B2B',
+          yellow: '#F6B800',
+          ink: '#111111',
+          bg: '#F5F5F5',
         },
       },
       borderRadius: {
-        '2xl': '1rem',
+        xl: '0.75rem', // 12px — Bauhaus card radius (lower bound)
+        '2xl': '1rem', // 16px — Bauhaus card radius (upper bound)
       },
       boxShadow: {
-        panel: '0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04)',
+        // Subtle Bauhaus card elevation — minimal visual noise.
+        panel: '0 1px 2px rgba(17, 17, 17, 0.04), 0 4px 12px rgba(17, 17, 17, 0.06)',
+        card: '0 1px 2px rgba(17, 17, 17, 0.04), 0 4px 12px rgba(17, 17, 17, 0.06)',
       },
       keyframes: {
         'dialog-pop': {

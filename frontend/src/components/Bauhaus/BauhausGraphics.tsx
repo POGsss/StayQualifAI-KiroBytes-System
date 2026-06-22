@@ -12,10 +12,10 @@ import type { JSX } from 'react';
 
 /** Public asset paths — swap the files to restyle without touching code. */
 export const ASSETS = {
-  logo: '/assets/logo.png',
-  heroShapeOne: '/assets/hero-shape-1.png',
-  heroShapeTwo: '/assets/hero-shape-2.png',
-  loginShape: '/assets/login-shape.png',
+  logo: '/assets/logo.svg',
+  heroShapeOne: '/assets/hero-shape-1.svg',
+  heroShapeTwo: '/assets/hero-shape-2.svg',
+  loginShape: '/assets/login-shape.svg',
 } as const;
 
 /** Brand logo image (custom asset). Decorative when paired with the wordmark. */

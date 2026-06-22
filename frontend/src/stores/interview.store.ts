@@ -28,6 +28,7 @@ import {
   computeScorecard as computeScorecardRequest,
   createSession as createSessionRequest,
   createStory as createStoryRequest,
+  deleteSession as deleteSessionRequest,
   deleteStory as deleteStoryRequest,
   evaluateAnswer as evaluateAnswerRequest,
   getScorecard as getScorecardRequest,
@@ -88,6 +89,7 @@ export interface IInterviewActions {
     input: ICreateSessionInput,
   ) => Promise<IInterviewSession | null>;
   openSession: (sessionId: string) => Promise<IInterviewSessionDetail | null>;
+  deleteSession: (sessionId: string) => Promise<boolean>;
   startSession: (sessionId: string) => Promise<IInterviewQuestion[] | null>;
   submitAnswer: (
     sessionId: string,
@@ -200,6 +202,30 @@ export const useInterviewStore = create<IInterviewStore>((set, get) => ({
       // Preserve prior `activeSession`/`activeQuestions`/`scorecard` on failure.
       set({ isLoading: false, error: toStoreError(cause) });
       return null;
+    }
+  },
+
+  deleteSession: async (sessionId: string): Promise<boolean> => {
+    set({ isLoading: true, error: null });
+    try {
+      await deleteSessionRequest(sessionId);
+      const current = get();
+      // Drop the deleted session from the list, and clear the active session /
+      // scorecard when they belonged to the deleted session.
+      const sessions = current.sessions.filter((s) => s.id !== sessionId);
+      const wasActive = current.activeSession?.id === sessionId;
+      set({
+        sessions,
+        isLoading: false,
+        ...(wasActive
+          ? { activeSession: null, activeQuestions: [], scorecard: null }
+          : {}),
+      });
+      return true;
+    } catch (cause) {
+      // Preserve prior `sessions` on failure.
+      set({ isLoading: false, error: toStoreError(cause) });
+      return false;
     }
   },
 

@@ -63,12 +63,26 @@
 
 body {
   margin: 0;
-  background-color: #f7f7f8;
+  background-color: #f5f5f5;
+  color: #111111;
   font-family:
+    'Inter',
+    'Manrope',
+    'IBM Plex Sans',
     'Now',
     system-ui,
     -apple-system,
     'Segoe UI',
     Roboto,
     sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: 'Manrope', 'IBM Plex Sans', 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.01em;
 }

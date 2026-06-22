@@ -181,15 +181,18 @@ describe('Interview routing — /interview/simulator → InterviewChatPage', () 
     expect(screen.getByLabelText(/job description/i)).toBeInTheDocument();
   });
 
-  it('renders the Interview tab-bar (InterviewPage shell) around the content', () => {
+  it('renders the InterviewPage shell around the routed content (tabs now live in the global top bar)', () => {
     renderAtPath('/interview/simulator');
 
-    // The InterviewPage nav exposes all four tabs
-    expect(screen.getByRole('navigation', { name: /interview sections/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /simulator/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /scorecard/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /sessions/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /star/i })).toBeInTheDocument();
+    // The feature tabs (Simulator / Sessions / STAR) moved to the global top
+    // bar, so the page shell no longer renders an in-page "Interview sections"
+    // nav. This isolated route tree mounts only the shell + sub-page.
+    expect(
+      screen.queryByRole('navigation', { name: /interview sections/i }),
+    ).not.toBeInTheDocument();
+
+    // The shell still hosts the routed sub-page content.
+    expect(screen.getByLabelText(/job description/i)).toBeInTheDocument();
   });
 });
 
