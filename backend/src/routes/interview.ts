@@ -26,6 +26,7 @@ import {
   computeScorecardHandler,
   createSessionHandler,
   createStoryHandler,
+  deleteSessionHandler,
   deleteStoryHandler,
   evaluateAnswerHandler,
   getScorecardHandler,
@@ -116,6 +117,14 @@ export function createInterviewRouter(): Router {
     requireAuth,
     validate({ params: sessionIdParamsSchema }),
     getScorecardHandler
+  );
+
+  // DELETE /sessions/:id — delete a session (cascades to questions/scorecard).
+  router.delete(
+    '/sessions/:id',
+    requireAuth,
+    validate({ params: sessionIdParamsSchema }),
+    deleteSessionHandler
   );
 
   // --- STAR stories -------------------------------------------------------

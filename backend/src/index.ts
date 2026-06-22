@@ -21,6 +21,7 @@ import { errorHandler } from './middleware/error.js';
 import { createInterviewRouter } from './routes/interview.js';
 import { createJobSearchRouter } from './routes/jobsearch.js';
 import { createResumeRouter } from './routes/resume.js';
+import { createUpskillingRouter } from './routes/upskilling.js';
 import { NotFoundError } from './utils/errors.js';
 
 /**
@@ -51,6 +52,9 @@ export function createApiRouter(): Router {
 
   // Job Search module routes — final paths: `/api/v1/jobsearch/*`.
   router.use('/jobsearch', createJobSearchRouter());
+
+  // Upskilling module routes — final paths: `/api/v1/upskilling/*`.
+  router.use('/upskilling', createUpskillingRouter());
 
   return router;
 }

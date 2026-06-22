@@ -1,4 +1,4 @@
-import React from 'react';
+import type { JSX } from 'react';
 
 export interface IVoiceOrbProps {
   /** Whether the orb should animate as active/recording (Req 12.1, 12.2). */

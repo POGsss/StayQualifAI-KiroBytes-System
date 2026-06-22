@@ -227,6 +227,11 @@ export async function getSession(sessionId: string): Promise<IInterviewSessionDe
   );
 }
 
+/** DELETE `/sessions/:id` — delete a session (cascades to questions/scorecard). */
+export async function deleteSession(sessionId: string): Promise<void> {
+  return sendDelete(`/sessions/${encodeURIComponent(sessionId)}`);
+}
+
 /** POST `/sessions/:id/questions/:qid/answers` — submit an answer to a question. */
 export async function submitAnswer(
   sessionId: string,

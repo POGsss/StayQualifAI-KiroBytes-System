@@ -28,6 +28,7 @@ import { registerAuthTokenService } from './tokenPropagation';
 import { setAuthToken as setResumeAuthToken } from './resume.service';
 import { setAuthToken as setInterviewAuthToken } from './interview.service';
 import { setAuthToken as setJobSearchAuthToken } from './jobsearch.service';
+import { setAuthToken as setUpskillingAuthToken } from './upskilling.service';
 
 /**
  * Register every module service's `setAuthToken` with the token-propagation
@@ -38,6 +39,7 @@ export function registerAllAuthTokenServices(): void {
   registerAuthTokenService({ id: 'resume', setAuthToken: setResumeAuthToken });
   registerAuthTokenService({ id: 'interview', setAuthToken: setInterviewAuthToken });
   registerAuthTokenService({ id: 'jobsearch', setAuthToken: setJobSearchAuthToken });
+  registerAuthTokenService({ id: 'upskilling', setAuthToken: setUpskillingAuthToken });
 }
 
 // Populate the registry once at module load so that merely importing this

@@ -4,7 +4,7 @@ import type { JSX } from 'react';
 /**
  * InterviewPage — layout shell for the Interview module.
  *
- * Renders the in-page tab navigation (Simulator / Scorecard / Sessions / STAR)
+ * Renders the in-page tab navigation (Simulator / Sessions / STAR)
  * and hosts the active sub-page through React Router's `<Outlet>`. The sidebar
  * links to the module root (`/interview`); these tabs switch between the
  * module's features.
@@ -12,7 +12,6 @@ import type { JSX } from 'react';
 
 const INTERVIEW_TABS: ReadonlyArray<{ to: string; label: string }> = [
   { to: '/interview/simulator', label: 'Simulator' },
-  { to: '/interview/scorecard', label: 'Scorecard' },
   { to: '/interview/sessions', label: 'Sessions' },
   { to: '/interview/stories', label: 'STAR' },
 ];

@@ -3,13 +3,13 @@ import type { JSX, ReactNode } from 'react';
 
 import { ComingSoonPage } from './pages/ComingSoonPage';
 import { JobSearchPage } from './pages/JobSearch/JobSearchPage';
+import { UpskillingPage } from './pages/Upskilling/UpskillingPage';
 import { ResumePage } from './pages/Resume/ResumePage';
 import { ResumeBuilderPage } from './pages/Resume/ResumeBuilderPage';
 import { ResumeUploadPage } from './pages/Resume/ResumeUploadPage';
 import { ResumeVersionsPage } from './pages/Resume/ResumeVersionsPage';
 import { InterviewPage } from './pages/Interview/InterviewPage';
 import { InterviewChatPage } from './pages/Interview/InterviewChatPage';
-import { InterviewScorecardPage } from './pages/Interview/InterviewScorecardPage';
 import { InterviewSessionsPage } from './pages/Interview/InterviewSessionsPage';
 import { StarOrganizerPage } from './pages/Interview/StarOrganizerPage';
 import { LoginPage } from './pages/Auth/LoginPage';
@@ -172,26 +172,21 @@ function AppModules(): JSX.Element {
           <Route path="versions" element={<ResumeVersionsPage />} />
         </Route>
 
-        {/* Interview module — in-page Simulator / Scorecard / Sessions / STAR tabs */}
+        {/* Interview module — in-page Simulator / Sessions / STAR tabs.
+            Scorecard is now merged into Sessions; redirect the old path. */}
         <Route path="/interview" element={<InterviewPage />}>
           <Route index element={<Navigate to="/interview/simulator" replace />} />
           <Route path="simulator" element={<InterviewChatPage />} />
-          <Route path="scorecard" element={<InterviewScorecardPage />} />
+          <Route path="scorecard" element={<Navigate to="/interview/sessions" replace />} />
           <Route path="sessions" element={<InterviewSessionsPage />} />
           <Route path="stories" element={<StarOrganizerPage />} />
         </Route>
 
         {/* Job Search module — in-page Listings / Tracker / AI Writer tabs */}
         <Route path="/jobsearch" element={<JobSearchPage />} />
-        <Route
-          path="/upskilling"
-          element={
-            <ComingSoonPage
-              title="Learning Paths & Skill Gaps"
-              description="Role-based projects, career roadmaps, and course recommendations are on the way."
-            />
-          }
-        />
+
+        {/* Upskilling module — in-page Projects / Roadmap / Courses tabs */}
+        <Route path="/upskilling" element={<UpskillingPage />} />
 
         <Route
           path="*"

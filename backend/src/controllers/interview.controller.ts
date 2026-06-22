@@ -38,6 +38,7 @@ import {
   createSession,
   createStory,
   computeScorecard,
+  deleteSession,
   deleteStory,
   evaluateAnswer,
   getSession,
@@ -333,6 +334,23 @@ export const getScorecardHandler: RequestHandler = asyncHandler(
       sessionId
     );
     res.status(200).json(singleEnvelope(result));
+  }
+);
+
+/**
+ * `DELETE /sessions/:id` — delete an interview session owned by the caller.
+ * The questions and scorecard rows are removed by the database's
+ * `ON DELETE CASCADE` foreign keys. Returns a single-resource envelope with
+ * `data: null`, `error: null`, `meta: null`.
+ */
+export const deleteSessionHandler: RequestHandler = asyncHandler(
+  async (req, res) => {
+    const supabase = requireSupabase(req);
+    const userId = requireUserId(req);
+    const sessionId = requireParam(req, 'id');
+
+    await deleteSession(supabase, userId, sessionId);
+    res.status(200).json(singleEnvelope<null>(null));
   }
 );
 

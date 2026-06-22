@@ -488,6 +488,45 @@ export async function getSession(
   return { ...session, questions, scorecard };
 }
 
+/**
+ * Delete an `Interview_Session` owned by the caller. The session is deleted
+ * RLS-scoped to the owning user; the `interview_questions` and
+ * `interview_scorecards` child rows are removed automatically by the
+ * `ON DELETE CASCADE` foreign keys. A no-rows outcome (absent or unowned)
+ * surfaces as {@link NotFoundError} so the API never reveals another user's
+ * data.
+ *
+ * @param supabase  Per-request, RLS-scoped Supabase client.
+ * @param userId    Owning user id.
+ * @param sessionId The session to delete.
+ * @throws {NotFoundError} when the session is absent/unowned.
+ * @throws {InternalError} when the deletion fails for a system reason.
+ */
+export async function deleteSession(
+  supabase: SupabaseClient,
+  userId: string,
+  sessionId: string
+): Promise<void> {
+  const { data, error } = await supabase
+    .from(SESSIONS_TABLE)
+    .delete()
+    .eq('id', sessionId)
+    .eq('user_id', userId)
+    .select('id')
+    .returns<Array<{ id: string }>>();
+
+  if (error !== null) {
+    throw new InternalError(
+      'Failed to delete the interview session.',
+      error.message
+    );
+  }
+
+  if (data === null || data.length === 0) {
+    throw new NotFoundError('The requested interview session was not found.');
+  }
+}
+
 // ---------------------------------------------------------------------------
 // STAR_Organizer passthroughs
 // ---------------------------------------------------------------------------

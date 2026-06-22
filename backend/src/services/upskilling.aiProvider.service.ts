@@ -1,7 +1,7 @@
 /**
- * Interview module-local AI_Provider wrapper — Requirements 2.4, 4.5, 5.12.
+ * Upskilling module-local AI_Provider wrapper — Requirements 1.6, 3.6.
  *
- * The Interview module's single point of contact with the AI providers. It
+ * The Upskilling module's single point of contact with the AI providers. It
  * delegates to the shared, provider-aware failover utility in
  * `utils/aiFailover.ts` (platform infrastructure) so credential discovery,
  * provider routing (Gemini + Groq), error classification, per-attempt timeout,
@@ -10,8 +10,7 @@
  * Isolation").
  *
  * The public surface (`generateJson`, `IGenerateJsonParams`) is unchanged, so
- * the Question_Generator, Answer_Evaluator, and Scorecard_Engine callers need
- * no modification.
+ * the Project_Generator and Roadmap_Service callers need no modification.
  *
  * Named exports only. Explicit return types. No `any`.
  */
