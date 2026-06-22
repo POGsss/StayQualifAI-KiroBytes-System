@@ -3,6 +3,17 @@ export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        // "Now" brand typeface (see public/fonts/) with a system fallback.
+        sans: [
+          'Now',
+          'system-ui',
+          '-apple-system',
+          'Segoe UI',
+          'Roboto',
+          'sans-serif',
+        ],
+      },
       colors: {
         // StayQualifAI brand palette (see steering/product.md)
         primary: {
@@ -20,12 +31,29 @@ export default {
         canvas: '#f7f7f8', // app background behind panels
         surface: '#ffffff', // white rounded panels
         ink: '#1a1a1a', // near-black primary text
+        // Bauhaus landing palette (see Figma redesign)
+        bauhaus: {
+          blue: '#0e4cb0',
+          red: '#ee1b24',
+          yellow: '#febe00',
+          ink: '#1d1d1d',
+          bg: '#f0f0f0',
+        },
       },
       borderRadius: {
         '2xl': '1rem',
       },
       boxShadow: {
         panel: '0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04)',
+      },
+      keyframes: {
+        'dialog-pop': {
+          '0%': { opacity: '0', transform: 'scale(0.95) translateY(8px)' },
+          '100%': { opacity: '1', transform: 'scale(1) translateY(0)' },
+        },
+      },
+      animation: {
+        'dialog-pop': 'dialog-pop 180ms ease-out',
       },
     },
   },

@@ -2,6 +2,61 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * "Now" brand typeface.
+ *
+ * Font files live in `public/fonts/` (OTF) and are served at `/fonts/<name>`.
+ * `font-display: swap` keeps text visible with the fallback stack while the
+ * font loads; if a file is absent the app renders in the fallback sans-serif.
+ */
+@font-face {
+  font-family: 'Now';
+  font-style: normal;
+  font-weight: 100;
+  font-display: swap;
+  src: url('/fonts/Now-Thin.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'Now';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('/fonts/Now-Light.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'Now';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/Now-Regular.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'Now';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/Now-Medium.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'Now';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/Now-Bold.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'Now';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url('/fonts/Now-Black.otf') format('opentype');
+}
+
 :root {
   color-scheme: light;
 }
@@ -10,6 +65,7 @@ body {
   margin: 0;
   background-color: #f7f7f8;
   font-family:
+    'Now',
     system-ui,
     -apple-system,
     'Segoe UI',

@@ -84,16 +84,21 @@ describe('App shell (authenticated)', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders the scanner page on the default route when authenticated', () => {
+  it('renders the public landing page on the root route', () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <App />
       </MemoryRouter>
     );
 
+    // `/` is now the public Bauhaus landing page (shown before/around sign-in),
+    // not the authenticated dashboard. The module shell is not rendered here.
     expect(
-      screen.getByRole('heading', { name: /resume scanner/i })
+      screen.getByRole('heading', { name: /train with ai/i })
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('navigation', { name: /primary/i })
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -114,12 +119,18 @@ describe('App shell (unauthenticated)', () => {
       </MemoryRouter>
     );
 
-    // The module shell is not rendered; the guard redirects to /login.
+    // The module shell is not rendered; the guard redirects to /login, which
+    // renders the public landing page with the sign-in dialog auto-opened.
     expect(
       screen.queryByRole('navigation', { name: /primary/i })
     ).not.toBeInTheDocument();
+    // The login is now a <dialog>; jsdom does not visually open it, so query
+    // including hidden content to assert the Google sign-in control is present.
     expect(
-      screen.getByRole('button', { name: /continue with google/i })
+      screen.getByRole('button', {
+        name: /continue with google/i,
+        hidden: true,
+      })
     ).toBeInTheDocument();
   });
 });

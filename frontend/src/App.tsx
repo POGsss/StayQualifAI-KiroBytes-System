@@ -12,7 +12,7 @@ import { InterviewChatPage } from './pages/Interview/InterviewChatPage';
 import { InterviewScorecardPage } from './pages/Interview/InterviewScorecardPage';
 import { InterviewSessionsPage } from './pages/Interview/InterviewSessionsPage';
 import { StarOrganizerPage } from './pages/Interview/StarOrganizerPage';
-import { LoginPage } from './pages/Auth/LoginPage';
+import { LandingPage } from './pages/Landing/LandingPage';
 import { AuthCallbackPage } from './pages/Auth/AuthCallbackPage';
 import { RouteGuard } from './components/RouteGuard/RouteGuard';
 import { ProfileControl } from './components/ProfileControl/ProfileControl';
@@ -215,8 +215,11 @@ export function App(): JSX.Element {
 
   return (
     <Routes>
-      {/* Unauthenticated routes — rendered OUTSIDE the AppShell / RouteGuard. */}
-      <Route path="/login" element={<LoginPage />} />
+      {/* Public marketing surface — rendered OUTSIDE the AppShell / RouteGuard.
+          The Bauhaus landing page hosts the sign-in dialog; `/login` opens that
+          same dialog automatically (e.g. when the RouteGuard redirects here). */}
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/login" element={<LandingPage autoOpenLogin />} />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
       {/* Everything else is guarded: AppShell + module routes render only when
