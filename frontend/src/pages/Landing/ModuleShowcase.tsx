@@ -44,7 +44,7 @@ const MODULES: readonly [IShowcaseModule, ...IShowcaseModule[]] = [
     solidClass: 'bg-bauhaus-yellow',
     textClass: 'text-bauhaus-yellow',
     description:
-      'Run custom mock interviews driven by your resume and the target role across Entry to Lead difficulty tiers, review a performance scorecard for grades, grammar and pressure handling, and organise your stories with the STAR framework.',
+      'Run mock interviews and the target role across Entry to Lead difficulty tiers, review a performance scorecard for grades, grammar and pressure handling, and organise your stories with the STAR framework.',
   },
   {
     id: 'jobsearch',

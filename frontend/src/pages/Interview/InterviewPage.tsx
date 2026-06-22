@@ -7,13 +7,15 @@ import type { JSX } from 'react';
  * The feature navigation (Simulator / Sessions / STAR) now lives in the global
  * top bar (see `App.tsx`), rendered per active module. This shell only hosts the
  * active sub-page through React Router's `<Outlet>`.
+ *
+ * Like the Resume shell, it no longer wraps the outlet in a single white panel —
+ * each sub-page owns its own panel composition (the Simulator renders the
+ * multi-card Bauhaus interview dashboard directly on the canvas).
  */
 export function InterviewPage(): JSX.Element {
   return (
     <section className="flex flex-col gap-6">
-      <div className="rounded-2xl bg-surface p-6 shadow-panel">
-        <Outlet />
-      </div>
+      <Outlet />
     </section>
   );
 }

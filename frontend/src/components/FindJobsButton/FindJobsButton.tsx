@@ -3,6 +3,7 @@ import type { JSX, DragEvent, ChangeEvent } from 'react';
 
 import { JobSearchApiError, scrapeJobs } from '../../services/jobsearch.service';
 import { useResumeStore } from '../../stores/resume.store';
+import { Button } from '../Button';
 
 export interface FindJobsButtonProps {
   hasResume: boolean;
@@ -193,15 +194,7 @@ export function FindJobsButton({ hasResume, onScrapeComplete }: FindJobsButtonPr
       )}
 
       {/* Main action button */}
-      <button
-        type="button"
-        onClick={openModal}
-        disabled={loading}
-        className="inline-flex items-center gap-2 self-start rounded-lg bg-[#9b5de5] px-5 py-2.5
-          font-medium text-white transition-colors hover:bg-[#8b4dd5]
-          disabled:cursor-not-allowed disabled:opacity-60
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9b5de5]/50 focus-visible:ring-offset-2"
-      >
+      <Button onClick={openModal} disabled={loading} className="gap-2 self-start">
         {loading && (
           <span
             className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
@@ -209,8 +202,8 @@ export function FindJobsButton({ hasResume, onScrapeComplete }: FindJobsButtonPr
             aria-label="Searching for jobs"
           />
         )}
-        {loading ? 'Searching…' : 'Find Jobs'}
-      </button>
+        {loading ? 'Searching…' : 'Resume'}
+      </Button>
 
       {/* Modal dialog */}
       <dialog
@@ -231,7 +224,7 @@ export function FindJobsButton({ hasResume, onScrapeComplete }: FindJobsButtonPr
               type="button"
               onClick={closeModal}
               className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9b5de5]/50"
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bauhaus-blue/40"
               aria-label="Close dialog"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -261,15 +254,9 @@ export function FindJobsButton({ hasResume, onScrapeComplete }: FindJobsButtonPr
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={handleUseExisting}
-                className="w-full rounded-lg bg-[#9b5de5] px-5 py-2.5 font-medium text-white
-                  transition-colors hover:bg-[#8b4dd5]
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9b5de5]/50 focus-visible:ring-offset-2"
-              >
+              <Button onClick={handleUseExisting} fullWidth>
                 Use this resume and find jobs
-              </button>
+              </Button>
 
               <div className="relative flex items-center gap-3">
                 <div className="flex-1 border-t border-gray-200" />
@@ -277,15 +264,13 @@ export function FindJobsButton({ hasResume, onScrapeComplete }: FindJobsButtonPr
                 <div className="flex-1 border-t border-gray-200" />
               </div>
 
-              <button
-                type="button"
+              <Button
+                variant="outline"
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-medium
-                  text-gray-700 transition-colors hover:bg-gray-50
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9b5de5]/50 focus-visible:ring-offset-2"
+                fullWidth
               >
                 Upload a different resume
-              </button>
+              </Button>
             </div>
           )}
 
@@ -307,8 +292,8 @@ export function FindJobsButton({ hasResume, onScrapeComplete }: FindJobsButtonPr
                 className={`flex cursor-pointer flex-col items-center gap-3 rounded-xl border-2 border-dashed
                   p-8 transition-colors ${
                     dragOver
-                      ? 'border-[#9b5de5] bg-[#9b5de5]/5'
-                      : 'border-gray-300 hover:border-[#9b5de5]/50 hover:bg-gray-50'
+                      ? 'border-accent-blue bg-accent-blue/5'
+                      : 'border-gray-300 hover:border-accent-blue/50 hover:bg-gray-50'
                   }`}
                 role="button"
                 tabIndex={0}
@@ -323,7 +308,7 @@ export function FindJobsButton({ hasResume, onScrapeComplete }: FindJobsButtonPr
                 {uploading ? (
                   <>
                     <span
-                      className="h-8 w-8 animate-spin rounded-full border-3 border-[#9b5de5]/30 border-t-[#9b5de5]"
+                      className="h-8 w-8 animate-spin rounded-full border-3 border-accent-blue/30 border-t-accent-blue"
                       role="status"
                       aria-label="Uploading resume"
                     />
@@ -331,14 +316,14 @@ export function FindJobsButton({ hasResume, onScrapeComplete }: FindJobsButtonPr
                   </>
                 ) : (
                   <>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#9b5de5]/10">
-                      <svg className="h-6 w-6 text-[#9b5de5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent-blue/10">
+                      <svg className="h-6 w-6 text-accent-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                       </svg>
                     </div>
                     <div className="text-center">
                       <p className="text-sm font-medium text-gray-700">
-                        Drop your resume here or <span className="text-[#9b5de5]">browse</span>
+                        Drop your resume here or <span className="text-accent-blue">browse</span>
                       </p>
                       <p className="mt-1 text-xs text-gray-400">
                         PDF or DOCX, max 5 MB

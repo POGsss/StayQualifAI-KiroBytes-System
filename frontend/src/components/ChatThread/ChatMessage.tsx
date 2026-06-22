@@ -10,9 +10,9 @@ export interface IChatMessageProps {
 /**
  * Renders a single Chat_Thread entry as visible caption text.
  *
- * - Assistant messages: left-aligned with a light purple background label
- *   ("AI Interviewer"), satisfying the role-distinct styling requirement.
- * - User messages: right-aligned with a solid purple background.
+ * - Assistant messages: left-aligned with a soft gray bubble and an
+ *   "AI Interviewer" label, satisfying the role-distinct styling requirement.
+ * - User messages: right-aligned with a solid Bauhaus-blue background.
  * - `message.text` is always rendered as visible caption text (Req 10.1).
  *
  * Named export only — no default export (platform convention).
@@ -29,7 +29,7 @@ export function ChatMessage({ message }: IChatMessageProps): JSX.Element {
         className={`flex max-w-[80%] flex-col gap-1 ${isAssistant ? 'items-start' : 'items-end'}`}
       >
         {/* Role label — assistive context above the bubble */}
-        <span className="text-xs font-medium text-gray-500">
+        <span className="text-xs font-medium text-muted">
           {isAssistant ? 'AI Interviewer' : 'You'}
         </span>
 
@@ -37,8 +37,8 @@ export function ChatMessage({ message }: IChatMessageProps): JSX.Element {
         <p
           className={
             isAssistant
-              ? 'rounded-2xl bg-purple-50 px-4 py-3 text-sm text-gray-800'
-              : 'rounded-2xl bg-purple-600 px-4 py-3 text-sm text-white'
+              ? 'rounded-2xl bg-canvas px-4 py-3 text-sm text-ink'
+              : 'rounded-2xl bg-accent-blue px-4 py-3 text-sm text-white'
           }
         >
           {message.text}

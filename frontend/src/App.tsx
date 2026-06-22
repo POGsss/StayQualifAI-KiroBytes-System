@@ -208,13 +208,17 @@ const UPSKILLING_TABS: ReadonlyArray<{ id: UpskillingTab; label: string }> = [
   { id: 'Courses', label: 'Courses' },
 ];
 
-/** Shared pill classes for top-bar feature tabs. */
+/**
+ * Shared pill classes for top-bar feature tabs. The active tab uses the dark
+ * sidebar color (matching the sidebar's selected-module treatment) so the
+ * in-page tabs read as part of the same navigation system.
+ */
 function tabPillClass(isActive: boolean): string {
   return [
-    'rounded-full px-4 py-2 text-sm font-medium transition-colors',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+    'inline-flex items-center rounded-full px-4 py-2 text-sm font-medium uppercase tracking-wide leading-none transition-colors',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bauhaus-blue/40',
     isActive
-      ? 'bg-primary text-white'
+      ? 'bg-sidebar text-white'
       : 'text-muted hover:bg-canvas hover:text-ink',
   ].join(' ');
 }

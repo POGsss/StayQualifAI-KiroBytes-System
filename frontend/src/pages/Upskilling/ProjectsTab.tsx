@@ -1,19 +1,67 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent, JSX } from 'react';
 
+import { Button } from '../../components/Button';
+import { Input } from '../../components/Input';
+import { KpiCard } from '../../components/KpiCard';
+import { Panel } from '../../components/Panel';
 import { ProjectCard } from '../../components/Upskilling/ProjectCard';
 import type { ISaveProjectInput } from '../../services/upskilling.service';
 import { useUpskillingStore } from '../../stores/upskilling.store';
 import type { IGenerateProjectsInput, IProjectSuggestion } from '../../types/upskilling.types';
 
 /**
- * ProjectsTab — Role-Based Project Generator.
+ * ProjectsTab — Role-Based Project Generator, presented as an AI career-growth
+ * dashboard (Bauhaus redesign, see docs/GLOBAL_REDESIGN.md §4).
  *
- * Lets the user enter a target role plus an optional comma-separated list of
- * focus skills, generate 3–5 AI portfolio-project suggestions, save the ones
- * they like, and review/delete previously saved suggestions. Loading and error
- * states are surfaced from the shared Zustand store (Req 1.1, 1.3, 2.1, 2.2, 2.4).
+ * Layout:
+ *   ┌──────────────────────────────────────────────────────────────┐
+ *   │  KPI cards (Technical · Portfolio · Career · Industry)         │
+ *   ├──────────────────────────────────────────────────────────────┤
+ *   │  Generate project ideas (target role + focus skills)           │
+ *   ├──────────────────────────────────────────────────────────────┤
+ *   │  Recommendations — 3-column responsive grid of project cards   │
+ *   │  Saved projects   — 3-column responsive grid of project cards  │
+ *   └──────────────────────────────────────────────────────────────┘
+ *
+ * Lets the user enter a target role plus optional focus skills, generate 3–5 AI
+ * portfolio-project suggestions, save the ones they like, view details inline,
+ * and review/delete previously saved suggestions. Loading and error states are
+ * surfaced from the shared Zustand store (Req 1.1, 1.3, 2.1, 2.2, 2.4).
  */
+
+/** Derived career-growth metrics rendered in the KPI row (all 0–100). */
+interface IUpskillingMetrics {
+  technicalSkillScore: number;
+  portfolioReadiness: number;
+  careerReadiness: number;
+  industryAlignment: number;
+}
+
+/**
+ * Derive the four dashboard KPI scores from the suggestions currently in view.
+ * There is no dedicated metrics endpoint yet, so these are computed
+ * client-side: a larger, more advanced, well-saved portfolio reads as higher
+ * career readiness. All values are clamped to 0–100.
+ */
+function computeMetrics(
+  saved: IProjectSuggestion[],
+  generated: IProjectSuggestion[],
+): IUpskillingMetrics {
+  const all = [...saved, ...generated];
+  const uniqueSkills = new Set(all.flatMap((project) => project.demonstratedSkills));
+  const advancedCount = all.filter((project) => project.difficulty === 'Advanced').length;
+
+  const technicalSkillScore = Math.min(100, uniqueSkills.size * 8);
+  const portfolioReadiness = Math.min(100, saved.length * 20);
+  const industryAlignment =
+    all.length === 0 ? 0 : Math.round((advancedCount / all.length) * 100);
+  const careerReadiness = Math.round(
+    (technicalSkillScore + portfolioReadiness + industryAlignment) / 3,
+  );
+
+  return { technicalSkillScore, portfolioReadiness, careerReadiness, industryAlignment };
+}
 
 /**
  * Parse the comma-separated focus-skills field into a trimmed, de-empties
@@ -62,6 +110,11 @@ export function ProjectsTab(): JSX.Element {
     void fetchProjects();
   }, [fetchProjects]);
 
+  const metrics = useMemo(
+    () => computeMetrics(savedProjects, generatedProjects),
+    [savedProjects, generatedProjects],
+  );
+
   const isLoading = status === 'loading';
   const canGenerate = targetRole.trim().length >= 2 && !isLoading;
 
@@ -94,80 +147,79 @@ export function ProjectsTab(): JSX.Element {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Generator form */}
-      <section className="rounded-2xl bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900">Generate project ideas</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Describe the role you&apos;re targeting and we&apos;ll suggest portfolio projects
-          that showcase the right skills.
-        </p>
+      {/* Generator toolbar — mirrors the Job Search "Search Job" toolbar */}
+      <Panel aria-label="Generate project ideas" title="Generate Project Ideas">
+        <form
+          className="grid items-center gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto]"
+          onSubmit={handleGenerate}
+        >
+          <Input
+            type="text"
+            value={targetRole}
+            aria-label="Target role"
+            placeholder="Target role (e.g. Senior Backend Engineer)"
+            maxLength={100}
+            onChange={(e): void => setTargetRole(e.target.value)}
+          />
 
-        <form className="mt-4 flex flex-col gap-4" onSubmit={handleGenerate}>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="target-role" className="text-sm font-medium text-gray-700">
-              Target role
-            </label>
-            <input
-              id="target-role"
-              type="text"
-              value={targetRole}
-              onChange={(e) => setTargetRole(e.target.value)}
-              placeholder="e.g. Senior Backend Engineer"
-              maxLength={100}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900
-                placeholder:text-gray-400 transition-colors
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50
-                focus-visible:border-primary"
-            />
-          </div>
+          <Input
+            type="text"
+            value={focusSkills}
+            aria-label="Focus skills"
+            placeholder="Focus skills (comma separated, optional)"
+            onChange={(e): void => setFocusSkills(e.target.value)}
+          />
 
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="focus-skills" className="text-sm font-medium text-gray-700">
-              Focus skills <span className="font-normal text-gray-400">(optional)</span>
-            </label>
-            <input
-              id="focus-skills"
-              type="text"
-              value={focusSkills}
-              onChange={(e) => setFocusSkills(e.target.value)}
-              placeholder="e.g. PostgreSQL, Docker, GraphQL"
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900
-                placeholder:text-gray-400 transition-colors
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50
-                focus-visible:border-primary"
-            />
-            <p className="text-xs text-gray-400">Separate skills with commas.</p>
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              disabled={!canGenerate}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2.5
-                text-sm font-medium text-white transition-colors hover:bg-primary/90
-                disabled:cursor-not-allowed disabled:opacity-50
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50
-                focus-visible:ring-offset-2"
-            >
-              {isLoading ? 'Generating…' : 'Generate projects'}
-            </button>
-          </div>
+          <Button type="submit" disabled={!canGenerate}>
+            {isLoading ? 'Generating…' : 'Generate'}
+          </Button>
         </form>
+      </Panel>
+
+      {/* KPI row — career-growth metrics */}
+      <section
+        aria-label="Career growth metrics"
+        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+      >
+        <KpiCard
+          label="Technical Skill Score"
+          value={metrics.technicalSkillScore}
+          tone="blue"
+          unit="%"
+        />
+        <KpiCard
+          label="Portfolio Readiness"
+          value={metrics.portfolioReadiness}
+          tone="yellow"
+          unit="%"
+        />
+        <KpiCard
+          label="Career Readiness"
+          value={metrics.careerReadiness}
+          tone="red"
+          unit="%"
+        />
+        <KpiCard
+          label="Industry Alignment Score"
+          value={metrics.industryAlignment}
+          tone="red"
+          unit="%"
+        />
       </section>
 
       {/* Error banner (dismissible) */}
       {error !== null && (
         <div
           role="alert"
-          className="flex items-start justify-between gap-3 rounded-2xl bg-red-50 p-4"
+          className="flex items-start justify-between gap-3 rounded-2xl bg-accent-red/10 p-4"
         >
-          <p className="text-sm text-red-600">{error.message}</p>
+          <p className="text-sm text-accent-red">{error.message}</p>
           <button
             type="button"
             onClick={clearError}
             aria-label="Dismiss error"
-            className="shrink-0 rounded-md p-1 text-red-500 transition-colors hover:bg-red-100
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+            className="shrink-0 rounded-md p-1 text-accent-red transition-colors hover:bg-accent-red/10
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-red/40"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -182,11 +234,11 @@ export function ProjectsTab(): JSX.Element {
         </div>
       )}
 
-      {/* Generated suggestions */}
+      {/* Generated suggestions — 3-column responsive grid */}
       {generatedProjects.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-semibold text-gray-900">Suggestions</h2>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <h2 className="text-lg font-bold text-ink">Recommendations</h2>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {generatedProjects.map((suggestion, index) => (
               <ProjectCard
                 key={`${suggestion.title}-${index}`}
@@ -202,19 +254,16 @@ export function ProjectsTab(): JSX.Element {
 
       {/* Loading placeholder */}
       {isLoading && generatedProjects.length === 0 && (
-        <div
-          className="rounded-2xl bg-white p-6 text-center shadow-sm"
-          aria-label="Loading projects"
-        >
-          <p className="text-sm text-gray-500">Working on it…</p>
-        </div>
+        <Panel aria-label="Loading projects" className="text-center">
+          <p className="text-sm text-muted">Working on it…</p>
+        </Panel>
       )}
 
-      {/* Saved suggestions */}
+      {/* Saved suggestions — 3-column responsive grid */}
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold text-gray-900">Saved projects</h2>
+        <h2 className="text-lg font-bold text-ink">Saved projects</h2>
         {savedProjects.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {savedProjects.map((suggestion) => (
               <ProjectCard
                 key={suggestion.id}
@@ -226,11 +275,11 @@ export function ProjectsTab(): JSX.Element {
             ))}
           </div>
         ) : (
-          <div className="rounded-2xl bg-white p-6 text-center shadow-sm">
-            <p className="text-sm text-gray-500">
+          <Panel aria-label="No saved projects" className="text-center">
+            <p className="text-sm text-muted">
               No saved projects yet. Generate some ideas and save the ones you like.
             </p>
-          </div>
+          </Panel>
         )}
       </section>
     </div>
