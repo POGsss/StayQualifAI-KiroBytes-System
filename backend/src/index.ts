@@ -69,6 +69,38 @@ export function createApiRouter(): Router {
 export function createApp(): Express {
   const app: Express = express();
 
+  // CORS — the hosted frontend (e.g. Vercel) is a different origin from the
+  // hosted backend, so browsers block its requests unless we opt in. Allowed
+  // origins come from `CORS_ORIGIN` (comma-separated). `*` allows any origin.
+  // Empty/unset falls back to `*` so local dev keeps working out of the box.
+  const corsOrigins: string[] = (process.env.CORS_ORIGIN ?? '*')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0);
+
+  app.use((req: Request, res: Response, next: NextFunction): void => {
+    const requestOrigin = req.headers.origin;
+    const allowAll = corsOrigins.includes('*');
+
+    if (allowAll) {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    } else if (typeof requestOrigin === 'string' && corsOrigins.includes(requestOrigin)) {
+      res.setHeader('Access-Control-Allow-Origin', requestOrigin);
+      res.setHeader('Vary', 'Origin');
+    }
+
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+
+    // Short-circuit CORS preflight requests.
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(204);
+      return;
+    }
+
+    next();
+  });
+
   // JSON body parsing for all incoming requests.
   app.use(express.json());
 

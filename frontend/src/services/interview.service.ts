@@ -36,8 +36,13 @@ import type {
   IUpdateStarInput,
 } from '../types/interview.types';
 
-/** Base path for every interview endpoint. The Vite dev proxy forwards `/api`. */
-const BASE_PATH = '/api/v1/interview';
+import { API_BASE_URL } from './apiConfig';
+
+/**
+ * Base path for every interview endpoint. `API_BASE_URL` is empty in dev (the
+ * Vite proxy forwards `/api`) and the hosted backend origin in production.
+ */
+const BASE_PATH = `${API_BASE_URL}/api/v1/interview`;
 
 /**
  * Read the error discriminator defensively. The mirrored `IApiError` declares

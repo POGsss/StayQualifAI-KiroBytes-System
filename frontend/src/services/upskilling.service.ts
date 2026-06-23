@@ -35,8 +35,13 @@ import type {
 
 import type { IApiError, IApiResponse } from '../types/resume.types';
 
-/** Base path for every upskilling endpoint. The Vite dev proxy forwards `/api`. */
-const BASE_PATH = '/api/v1/upskilling';
+import { API_BASE_URL } from './apiConfig';
+
+/**
+ * Base path for every upskilling endpoint. `API_BASE_URL` is empty in dev (the
+ * Vite proxy forwards `/api`) and the hosted backend origin in production.
+ */
+const BASE_PATH = `${API_BASE_URL}/api/v1/upskilling`;
 
 /**
  * Typed client error thrown when a request fails. Carries the backend
