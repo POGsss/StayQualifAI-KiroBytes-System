@@ -91,3 +91,34 @@ h4 {
   width: 0;
   height: 0;
 }
+
+@media print {
+  /* Hide every UI component when printing */
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  nav, header, aside, .no-print, button, .flex-col.gap-6 > div:first-child {
+    display: none !important;
+  }
+  /* Remove layout paddings/margins for full print area */
+  .pl-\[300px\], main {
+    padding: 0 !important;
+    margin: 0 !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+  }
+  .print-resume-page {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    aspect-ratio: auto !important;
+  }
+}
+

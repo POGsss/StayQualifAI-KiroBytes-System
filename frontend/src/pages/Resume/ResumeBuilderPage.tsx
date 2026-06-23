@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { ChangeEvent, FormEvent, JSX } from 'react';
+import type { FormEvent, JSX } from 'react';
 
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
-import { Select } from '../../components/Select';
 import { Panel } from '../../components/Panel';
 import { MatchPanel } from '../../components/MatchPanel';
 import { useResumeStore } from '../../stores/resume.store';
@@ -13,23 +12,6 @@ import type {
   IStructuredResume,
   ResumeSectionType,
 } from '../../types/resume.types';
-
-/**
- * ResumeBuilderPage — build an ATS-parseable resume from a template, edit its
- * sections, save it as a Resume_Version, run a semantic job-match analysis, and
- * generate X-Y-Z achievement bullets.
- *
- * Data flows exclusively through the resume Zustand store; this page never
- * calls the API/service or Supabase directly. A single `useEffect` loads the
- * available templates on mount (Req 5.1). Selecting a template scaffolds an
- * empty `IStructuredResume` locally from the template's section types
- * (Req 5.2); the user edits the section fields (controlled inputs) and saves
- * via `createVersion` (Req 5.3). The Job Description field drives `matchJob`
- * and renders `MatchPanel` (Req 6.2); the experience field drives
- * `generateBullets` (Req 7.1).
- *
- * Validates: Requirements 5.1, 5.2, 5.3, 6.2, 7.1
- */
 
 /** Section types that carry repeating, line-oriented entries. */
 type ListSectionKey = 'experience' | 'education' | 'additional';
@@ -61,23 +43,36 @@ function emptyListSection(type: ListSectionKey): IResumeSection {
 
 /**
  * Scaffold an empty `IStructuredResume` from a template's declared section
- * types. List-style sections (experience/education/additional) are seeded with
- * a single empty section only when the template includes that type, so the
- * editing form mirrors the chosen template's structure (Req 5.2).
+ * types. List-style sections are seeded with a single empty item only when
+ * the template includes that type. If existing resume content is provided,
+ * we merge and preserve overlapping content fields to prevent data loss.
  */
-function scaffoldResume(template: IResumeTemplate): IStructuredResume {
+function scaffoldResume(
+  template: IResumeTemplate,
+  existing?: IStructuredResume | null,
+): IStructuredResume {
   return {
-    contact: { name: '', email: '', phone: '', location: '', links: [] },
-    summary: '',
+    contact: existing?.contact ?? { name: '', email: '', phone: '', location: '', links: [] },
+    summary: existing?.summary ?? '',
     experience: template.sections.includes('experience')
-      ? [emptyListSection('experience')]
+      ? existing && existing.experience.length > 0
+        ? existing.experience
+        : [emptyListSection('experience')]
       : [],
     education: template.sections.includes('education')
-      ? [emptyListSection('education')]
+      ? existing && existing.education.length > 0
+        ? existing.education
+        : [emptyListSection('education')]
       : [],
-    skills: [],
+    skills: template.sections.includes('skills')
+      ? existing && existing.skills.length > 0
+        ? existing.skills
+        : []
+      : [],
     additional: template.sections.includes('additional')
-      ? [emptyListSection('additional')]
+      ? existing && existing.additional.length > 0
+        ? existing.additional
+        : [emptyListSection('additional')]
       : [],
   };
 }
@@ -116,34 +111,91 @@ export function ResumeBuilderPage(): JSX.Element {
   const [jobDescription, setJobDescription] = useState<string>('');
   const [experienceText, setExperienceText] = useState<string>('');
 
-  // Single effect: load the ATS-parseable templates on mount (Req 5.1).
+  // Right-column tab switcher: 'edit' or 'preview'
+  const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
+  // Copy to clipboard state feedback index
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+
+  // Single effect: load the templates on mount (Req 5.1).
   useEffect(() => {
     void loadTemplates();
   }, [loadTemplates]);
 
   const selectedTemplate = useMemo<IResumeTemplate | undefined>(
-    () => templates.find((template) => template.id === selectedTemplateId),
+    () => {
+      if (selectedTemplateId === 'custom') {
+        return {
+          id: 'custom',
+          name: 'Custom Template',
+          sections: ['contact', 'summary', 'experience', 'education', 'skills', 'additional'],
+        };
+      }
+      return templates.find((template) => template.id === selectedTemplateId);
+    },
     [templates, selectedTemplateId],
   );
 
-  const templateOptions = useMemo(() => {
-    return [
-      { value: '', label: 'Select a template…' },
-      ...templates.map((template) => ({
-        value: template.id,
-        label: template.name,
-      })),
-    ];
-  }, [templates]);
-
   const isBusy = status === 'loading';
 
-  const handleTemplateChange = (event: ChangeEvent<HTMLSelectElement>): void => {
-    const nextId = event.target.value;
-    setSelectedTemplateId(nextId);
-    const template = templates.find((candidate) => candidate.id === nextId);
-    // Scaffold a fresh structured resume from the chosen template (Req 5.2).
-    setResumeContent(template ? scaffoldResume(template) : null);
+  const handleSelectTemplate = (type: 'entry' | 'professional' | 'skills' | 'custom'): void => {
+    if (type === 'custom') {
+      setSelectedTemplateId('custom');
+      setResumeContent({
+        contact: resumeContent?.contact ?? { name: '', email: '', phone: '', location: '', links: [] },
+        summary: resumeContent?.summary ?? '',
+        experience: resumeContent?.experience && resumeContent.experience.length > 0
+          ? resumeContent.experience
+          : [emptyListSection('experience')],
+        education: resumeContent?.education && resumeContent.education.length > 0
+          ? resumeContent.education
+          : [emptyListSection('education')],
+        skills: resumeContent?.skills && resumeContent.skills.length > 0 ? resumeContent.skills : [],
+        additional: resumeContent?.additional && resumeContent.additional.length > 0
+          ? resumeContent.additional
+          : [emptyListSection('additional')],
+      });
+      return;
+    }
+
+    const template = templates.find((t) => {
+      const name = t.name.toLowerCase();
+      if (type === 'entry') {
+        return name.includes('entry') || name.includes('graduate');
+      }
+      if (type === 'professional') {
+        return name.includes('professional') || name.includes('chronological');
+      }
+      if (type === 'skills') {
+        return name.includes('skill');
+      }
+      return false;
+    });
+
+    if (template) {
+      setSelectedTemplateId(template.id);
+      setResumeContent(scaffoldResume(template, resumeContent));
+    }
+  };
+
+  const isTemplateActive = (type: 'entry' | 'professional' | 'skills' | 'custom'): boolean => {
+    if (type === 'custom') {
+      return selectedTemplateId === 'custom';
+    }
+    const template = templates.find((t) => t.id === selectedTemplateId);
+    if (!template) {
+      return false;
+    }
+    const name = template.name.toLowerCase();
+    if (type === 'entry') {
+      return name.includes('entry') || name.includes('graduate');
+    }
+    if (type === 'professional') {
+      return name.includes('professional') || name.includes('chronological');
+    }
+    if (type === 'skills') {
+      return name.includes('skill');
+    }
+    return false;
   };
 
   const updateContactField = (
@@ -205,8 +257,6 @@ export function ResumeBuilderPage(): JSX.Element {
     if (!resumeContent || versionName.trim().length === 0) {
       return;
     }
-    // Persist the built resume as a Resume_Version (Req 5.3). Section-level
-    // validation (Req 5.4) is enforced server-side and surfaced via `error`.
     await createVersion(versionName.trim(), resumeContent);
   };
 
@@ -214,7 +264,6 @@ export function ResumeBuilderPage(): JSX.Element {
     if (!resumeContent || jobDescription.trim().length === 0) {
       return;
     }
-    // Semantic job-match analysis rendered through MatchPanel (Req 6.2).
     await matchJob(resumeContent, jobDescription.trim());
   };
 
@@ -222,287 +271,541 @@ export function ResumeBuilderPage(): JSX.Element {
     if (experienceText.trim().length === 0) {
       return;
     }
-    // X-Y-Z achievement bullet generation (Req 7.1).
     await generateBullets(experienceText.trim());
   };
 
+  const handleCopyBullet = (text: string, index: number): void => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 2000);
+    });
+  };
+
   const sectionTypes: ResumeSectionType[] = selectedTemplate?.sections ?? [];
-  const canSave =
-    resumeContent !== null && versionName.trim().length > 0 && !isBusy;
+  const canSave = resumeContent !== null && versionName.trim().length > 0 && !isBusy;
+
+  // Determine section layout order based on template
+  const orderedSections = useMemo<ResumeSectionType[]>(() => {
+    if (!selectedTemplate) {
+      return [];
+    }
+    return selectedTemplate.sections.filter((s) => s !== 'contact');
+  }, [selectedTemplate]);
 
   return (
     <div className="flex flex-col gap-6">
       {error !== null ? (
         <p
           role="alert"
-          className="rounded-2xl border border-accent-red/40 bg-accent-red/10 px-4 py-3 text-sm text-ink"
+          className="rounded-2xl border border-accent-red/40 bg-accent-red/10 px-4 py-3 text-sm text-ink no-print"
         >
           {error.message}
         </p>
       ) : null}
 
-      {/* Template selection (Req 5.1 / 5.2) */}
-      <Panel aria-label="Template selection" title="Template Selection">
-        <div className="flex flex-col gap-1.5 max-w-md">
-          <label htmlFor="template-select" className="text-sm font-medium text-muted">
-            Choose a template
-          </label>
-          <Select
-            id="template-select"
-            value={selectedTemplateId}
-            onChange={handleTemplateChange}
-            disabled={isBusy && templates.length === 0}
-            options={templateOptions}
-          />
-        </div>
-      </Panel>
-
-      {/* Section editing + save (Req 5.3) */}
-      {resumeContent !== null ? (
-        <Panel aria-label="Resume builder form" title="Edit Resume Content">
-          <form onSubmit={handleSave} className="flex flex-col gap-6">
-            {sectionTypes.includes('contact') ? (
-              <fieldset className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-canvas p-5">
-                <legend className="px-2 text-sm font-bold text-ink">Contact Info</legend>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="contact-name" className="text-sm font-medium text-muted">
-                      Full name
-                    </label>
-                    <Input
-                      id="contact-name"
-                      type="text"
-                      value={resumeContent.contact.name}
-                      onChange={(event): void => updateContactField('name', event.target.value)}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="contact-email" className="text-sm font-medium text-muted">
-                      Email
-                    </label>
-                    <Input
-                      id="contact-email"
-                      type="email"
-                      value={resumeContent.contact.email}
-                      onChange={(event): void => updateContactField('email', event.target.value)}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="contact-phone" className="text-sm font-medium text-muted">
-                      Phone
-                    </label>
-                    <Input
-                      id="contact-phone"
-                      type="tel"
-                      value={resumeContent.contact.phone ?? ''}
-                      onChange={(event): void => updateContactField('phone', event.target.value)}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="contact-location" className="text-sm font-medium text-muted">
-                      Location
-                    </label>
-                    <Input
-                      id="contact-location"
-                      type="text"
-                      value={resumeContent.contact.location ?? ''}
-                      onChange={(event): void =>
-                        updateContactField('location', event.target.value)
-                      }
-                    />
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="contact-links" className="text-sm font-medium text-muted">
-                    Links (one per line)
-                  </label>
-                  <textarea
-                    id="contact-links"
-                    rows={2}
-                    value={resumeContent.contact.links.join('\n')}
-                    onChange={(event): void => updateLinks(event.target.value)}
-                    className={TEXTAREA_CLASS}
-                  />
-                </div>
-              </fieldset>
-            ) : null}
-
-            {sectionTypes.includes('summary') ? (
+      <div className="grid grid-cols-1 lg:grid-cols-[4fr_6fr] gap-6 items-start">
+        {/* Left Column: Config, Select Template, Achievement Bullets */}
+        <div className="flex flex-col gap-6 no-print">
+          {/* Card 1: Resume Description */}
+          <Panel aria-label="Resume Description" title="Resume Description">
+            <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="summary" className="text-sm font-medium text-muted">
-                  Professional summary
-                </label>
-                <textarea
-                  id="summary"
-                  rows={3}
-                  value={resumeContent.summary}
-                  onChange={(event): void => updateSummary(event.target.value)}
-                  className={TEXTAREA_CLASS}
-                />
-              </div>
-            ) : null}
-
-            {sectionTypes.includes('experience') ? (
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="experience-section" className="text-sm font-medium text-muted">
-                  Experience (one bullet per line)
-                </label>
-                <textarea
-                  id="experience-section"
-                  rows={5}
-                  value={itemsToLines(resumeContent.experience[0])}
-                  onChange={(event): void => updateListSection('experience', event.target.value)}
-                  className={TEXTAREA_CLASS}
-                />
-              </div>
-            ) : null}
-
-            {sectionTypes.includes('education') ? (
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="education-section" className="text-sm font-medium text-muted">
-                  Education (one entry per line)
-                </label>
-                <textarea
-                  id="education-section"
-                  rows={3}
-                  value={itemsToLines(resumeContent.education[0])}
-                  onChange={(event): void => updateListSection('education', event.target.value)}
-                  className={TEXTAREA_CLASS}
-                />
-              </div>
-            ) : null}
-
-            {sectionTypes.includes('skills') ? (
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="skills" className="text-sm font-medium text-muted">
-                  Skills (comma separated)
+                <label htmlFor="version-name" className="text-sm font-medium text-muted">
+                  Version Name
                 </label>
                 <Input
-                  id="skills"
+                  id="version-name"
                   type="text"
-                  value={resumeContent.skills.join(', ')}
-                  onChange={(event): void => updateSkills(event.target.value)}
+                  value={versionName}
+                  onChange={(event): void => setVersionName(event.target.value)}
+                  placeholder="e.g. Frontend Engineer — Acme"
+                  disabled={isBusy}
                 />
               </div>
-            ) : null}
 
-            {sectionTypes.includes('additional') ? (
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="additional-section" className="text-sm font-medium text-muted">
-                  Additional (one entry per line)
+                <label htmlFor="job-description" className="text-sm font-medium text-muted">
+                  Job Description
                 </label>
                 <textarea
-                  id="additional-section"
-                  rows={3}
-                  value={itemsToLines(resumeContent.additional[0])}
-                  onChange={(event): void => updateListSection('additional', event.target.value)}
+                  id="job-description"
+                  rows={4}
+                  value={jobDescription}
+                  onChange={(event): void => setJobDescription(event.target.value)}
+                  placeholder="Paste target job description to match analysis..."
                   className={TEXTAREA_CLASS}
+                  disabled={isBusy}
                 />
               </div>
-            ) : null}
 
-            <div className="flex flex-col gap-1.5 max-w-md">
-              <label htmlFor="version-name" className="text-sm font-medium text-muted">
-                Version name
-              </label>
-              <Input
-                id="version-name"
-                type="text"
-                value={versionName}
-                onChange={(event): void => setVersionName(event.target.value)}
-                placeholder="e.g. Frontend Engineer — Acme"
-              />
+              <div className="flex gap-3 justify-end mt-2">
+                <Button
+                  type="button"
+                  onClick={(): void => {
+                    void handleAnalyzeMatch();
+                  }}
+                  disabled={
+                    resumeContent === null || jobDescription.trim().length === 0 || isBusy
+                  }
+                  variant="outline"
+                >
+                  Analyze Match
+                </Button>
+                <Button
+                  type="button"
+                  onClick={(e): void => {
+                    const form = document.getElementById('resume-builder-form') as HTMLFormElement | null;
+                    if (form) {
+                      form.requestSubmit();
+                    } else {
+                      // Fallback if form not active in DOM (e.g. in preview mode)
+                      void handleSave(e as unknown as FormEvent<HTMLFormElement>);
+                    }
+                  }}
+                  disabled={!canSave}
+                >
+                  {isBusy ? 'Saving…' : 'Save Resume'}
+                </Button>
+              </div>
+
+              {matchResult !== null ? (
+                <div className="mt-4 border-t border-gray-150 pt-4">
+                  <MatchPanel result={matchResult} />
+                </div>
+              ) : null}
+            </div>
+          </Panel>
+
+          {/* Card 2: Select Template */}
+          <Panel aria-label="Select Template" title="Select Template">
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={(): void => handleSelectTemplate('entry')}
+                className={`h-[60px] rounded-2xl font-bold text-sm text-white transition-all transform hover:scale-[1.02] flex items-center justify-center text-center p-2 bg-accent-blue ${
+                  isTemplateActive('entry') ? 'ring-4 ring-black/40 shadow-md scale-[1.02]' : 'opacity-85 hover:opacity-100'
+                }`}
+              >
+                Entry / Graduate
+              </button>
+              <button
+                type="button"
+                onClick={(): void => handleSelectTemplate('professional')}
+                className={`h-[60px] rounded-2xl font-bold text-sm text-white transition-all transform hover:scale-[1.02] flex items-center justify-center text-center p-2 bg-accent-yellow ${
+                  isTemplateActive('professional') ? 'ring-4 ring-black/40 shadow-md scale-[1.02]' : 'opacity-85 hover:opacity-100'
+                }`}
+              >
+                Professional
+              </button>
+              <button
+                type="button"
+                onClick={(): void => handleSelectTemplate('skills')}
+                className={`h-[60px] rounded-2xl font-bold text-sm text-white transition-all transform hover:scale-[1.02] flex items-center justify-center text-center p-2 bg-accent-red ${
+                  isTemplateActive('skills') ? 'ring-4 ring-black/40 shadow-md scale-[1.02]' : 'opacity-85 hover:opacity-100'
+                }`}
+              >
+                Skill Focused
+              </button>
+              <button
+                type="button"
+                onClick={(): void => handleSelectTemplate('custom')}
+                className={`h-[60px] rounded-2xl font-bold text-sm text-white transition-all transform hover:scale-[1.02] flex items-center justify-center text-center p-2 bg-neutral-800 ${
+                  isTemplateActive('custom') ? 'ring-4 ring-black/40 shadow-md scale-[1.02]' : 'opacity-85 hover:opacity-100'
+                }`}
+              >
+                Custom
+              </button>
+            </div>
+          </Panel>
+
+          {/* Card 3: Achievement Bullets */}
+          <Panel aria-label="Achievement Bullets" title="Achievement Bullets">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="experience-input" className="text-sm font-medium text-muted">
+                  Describe an experience
+                </label>
+                <textarea
+                  id="experience-input"
+                  rows={3}
+                  value={experienceText}
+                  onChange={(event): void => setExperienceText(event.target.value)}
+                  placeholder="Describe what you did, and we'll rewrite it as X-Y-Z achievement bullets."
+                  className={TEXTAREA_CLASS}
+                  disabled={isBusy}
+                />
+              </div>
+              <Button
+                type="button"
+                onClick={(): void => {
+                  void handleGenerateBullets();
+                }}
+                disabled={experienceText.trim().length === 0 || isBusy}
+                className="self-end"
+              >
+                Generate Bullets
+              </Button>
+
+              {bullets.length > 0 ? (
+                <div className="flex flex-col gap-2 mt-2">
+                  <h4 className="text-xs font-semibold text-muted uppercase tracking-wider">Generated Bullets</h4>
+                  <ul aria-label="Generated achievement bullets" className="flex flex-col gap-2">
+                    {bullets.map((bullet, index) => (
+                      <li
+                        key={`${index}-${bullet}`}
+                        className="rounded-xl border border-gray-200 bg-canvas p-3 text-xs text-ink flex justify-between items-start gap-3"
+                      >
+                        <span className="flex-1 leading-relaxed">{bullet}</span>
+                        <button
+                          type="button"
+                          onClick={(): void => handleCopyBullet(bullet, index)}
+                          className="shrink-0 p-1 text-muted hover:text-ink hover:bg-gray-100 rounded transition-colors text-[10px] font-semibold"
+                          title="Copy to clipboard"
+                        >
+                          {copiedIndex === index ? 'Copied!' : 'Copy'}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          </Panel>
+        </div>
+
+        {/* Right Column: Work Space (Form / PDF preview) */}
+        <div className="flex flex-col gap-4">
+          <Panel
+            aria-label="Resume Preview"
+            title="Resume Workspace"
+            className="flex flex-col min-h-[42rem] justify-between relative print-resume-page"
+          >
+            {/* Top Workspace Content */}
+            <div className="flex-1 flex flex-col mb-4">
+              {resumeContent !== null ? (
+                <>
+                  {activeTab === 'edit' ? (
+                    /* Edit Form Layout */
+                    <form
+                      id="resume-builder-form"
+                      onSubmit={handleSave}
+                      className="flex flex-col gap-6 max-h-[68vh] overflow-y-auto pr-1 no-print"
+                    >
+                      {sectionTypes.includes('contact') ? (
+                        <fieldset className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-canvas p-4">
+                          <legend className="px-2 text-xs font-bold uppercase tracking-wider text-muted">Contact Info</legend>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="flex flex-col gap-1">
+                              <label htmlFor="contact-name" className="text-xs font-medium text-muted">
+                                Full name
+                              </label>
+                              <Input
+                                id="contact-name"
+                                type="text"
+                                value={resumeContent.contact.name}
+                                onChange={(event): void => updateContactField('name', event.target.value)}
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <label htmlFor="contact-email" className="text-xs font-medium text-muted">
+                                Email
+                              </label>
+                              <Input
+                                id="contact-email"
+                                type="email"
+                                value={resumeContent.contact.email}
+                                onChange={(event): void => updateContactField('email', event.target.value)}
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <label htmlFor="contact-phone" className="text-xs font-medium text-muted">
+                                Phone
+                              </label>
+                              <Input
+                                id="contact-phone"
+                                type="tel"
+                                value={resumeContent.contact.phone ?? ''}
+                                onChange={(event): void => updateContactField('phone', event.target.value)}
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <label htmlFor="contact-location" className="text-xs font-medium text-muted">
+                                Location
+                              </label>
+                              <Input
+                                id="contact-location"
+                                type="text"
+                                value={resumeContent.contact.location ?? ''}
+                                onChange={(event): void => updateContactField('location', event.target.value)}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label htmlFor="contact-links" className="text-xs font-medium text-muted">
+                              Links (one per line)
+                            </label>
+                            <textarea
+                              id="contact-links"
+                              rows={2}
+                              value={resumeContent.contact.links.join('\n')}
+                              onChange={(event): void => updateLinks(event.target.value)}
+                              className={TEXTAREA_CLASS}
+                            />
+                          </div>
+                        </fieldset>
+                      ) : null}
+
+                      {sectionTypes.includes('summary') ? (
+                        <div className="flex flex-col gap-1">
+                          <label htmlFor="summary" className="text-xs font-bold uppercase tracking-wider text-muted">
+                            Professional Summary
+                          </label>
+                          <textarea
+                            id="summary"
+                            rows={3}
+                            value={resumeContent.summary}
+                            onChange={(event): void => updateSummary(event.target.value)}
+                            className={TEXTAREA_CLASS}
+                          />
+                        </div>
+                      ) : null}
+
+                      {sectionTypes.includes('experience') ? (
+                        <div className="flex flex-col gap-1">
+                          <label htmlFor="experience-section" className="text-xs font-bold uppercase tracking-wider text-muted">
+                            Experience (one bullet per line)
+                          </label>
+                          <textarea
+                            id="experience-section"
+                            rows={5}
+                            value={itemsToLines(resumeContent.experience[0])}
+                            onChange={(event): void => updateListSection('experience', event.target.value)}
+                            className={TEXTAREA_CLASS}
+                          />
+                        </div>
+                      ) : null}
+
+                      {sectionTypes.includes('education') ? (
+                        <div className="flex flex-col gap-1">
+                          <label htmlFor="education-section" className="text-xs font-bold uppercase tracking-wider text-muted">
+                            Education (one entry per line)
+                          </label>
+                          <textarea
+                            id="education-section"
+                            rows={3}
+                            value={itemsToLines(resumeContent.education[0])}
+                            onChange={(event): void => updateListSection('education', event.target.value)}
+                            className={TEXTAREA_CLASS}
+                          />
+                        </div>
+                      ) : null}
+
+                      {sectionTypes.includes('skills') ? (
+                        <div className="flex flex-col gap-1">
+                          <label htmlFor="skills" className="text-xs font-bold uppercase tracking-wider text-muted">
+                            Skills (comma separated)
+                          </label>
+                          <Input
+                            id="skills"
+                            type="text"
+                            value={resumeContent.skills.join(', ')}
+                            onChange={(event): void => updateSkills(event.target.value)}
+                          />
+                        </div>
+                      ) : null}
+
+                      {sectionTypes.includes('additional') ? (
+                        <div className="flex flex-col gap-1">
+                          <label htmlFor="additional-section" className="text-xs font-bold uppercase tracking-wider text-muted">
+                            Additional (one entry per line)
+                          </label>
+                          <textarea
+                            id="additional-section"
+                            rows={3}
+                            value={itemsToLines(resumeContent.additional[0])}
+                            onChange={(event): void => updateListSection('additional', event.target.value)}
+                            className={TEXTAREA_CLASS}
+                          />
+                        </div>
+                      ) : null}
+                    </form>
+                  ) : (
+                    /* PDF Document Preview layout */
+                    <div className="flex flex-col gap-4 flex-1">
+                      <div className="flex justify-between items-center bg-gray-100 p-2.5 rounded-xl border border-gray-200 no-print">
+                        <span className="text-xs text-muted font-medium">PDF Print Preview (US Letter)</span>
+                        <button
+                          type="button"
+                          onClick={(): void => window.print()}
+                          className="inline-flex items-center gap-1.5 bg-ink text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-ink/90 transition-colors"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
+                            <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                            <rect x="6" y="14" width="12" height="8" />
+                          </svg>
+                          Print / Save as PDF
+                        </button>
+                      </div>
+
+                      <div className="print-resume-page bg-white shadow-sm border border-gray-300 w-full max-w-[800px] mx-auto p-10 font-serif text-gray-800 aspect-[8.5/11] flex flex-col justify-between overflow-hidden">
+                        {/* Header contact */}
+                        <div className="text-center border-b border-gray-300 pb-3 mb-5">
+                          <h1 className="text-2xl font-bold text-gray-900 tracking-wide uppercase font-sans">
+                            {resumeContent.contact.name || "YOUR NAME"}
+                          </h1>
+                          <div className="text-[11px] text-gray-600 flex flex-wrap justify-center gap-x-2 gap-y-1 mt-1.5 font-sans">
+                            {resumeContent.contact.email && <span>{resumeContent.contact.email}</span>}
+                            {resumeContent.contact.phone && <span>• {resumeContent.contact.phone}</span>}
+                            {resumeContent.contact.location && <span>• {resumeContent.contact.location}</span>}
+                          </div>
+                          {resumeContent.contact.links && resumeContent.contact.links.length > 0 && (
+                            <div className="text-[10px] text-gray-500 mt-1 flex flex-wrap justify-center gap-x-2 font-sans">
+                              {resumeContent.contact.links.filter(l => l.trim().length > 0).map((link, idx) => (
+                                <span key={idx} className="hover:underline">{link}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Document Content ordered dynamically */}
+                        <div className="flex-1 flex flex-col gap-5 text-left">
+                          {orderedSections.map((secName) => {
+                            if (secName === 'summary' && resumeContent.summary) {
+                              return (
+                                <div key="summary" className="flex flex-col gap-1.5">
+                                  <h2 className="text-[11px] font-bold text-gray-900 tracking-widest uppercase border-b border-gray-200 pb-0.5 font-sans">
+                                    Professional Summary
+                                  </h2>
+                                  <p className="text-[11px] text-gray-700 leading-relaxed font-sans">{resumeContent.summary}</p>
+                                </div>
+                              );
+                            }
+
+                            if (secName === 'experience' && resumeContent.experience?.[0]?.items?.some(i => i.trim().length > 0)) {
+                              return (
+                                <div key="experience" className="flex flex-col gap-1.5">
+                                  <h2 className="text-[11px] font-bold text-gray-900 tracking-widest uppercase border-b border-gray-200 pb-0.5 font-sans">
+                                    Experience
+                                  </h2>
+                                  <ul className="list-disc list-outside pl-4 text-[11px] text-gray-700 space-y-1 font-sans">
+                                    {resumeContent.experience[0].items.filter(i => i.trim().length > 0).map((item, idx) => (
+                                      <li key={idx} className="leading-relaxed">{item}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              );
+                            }
+
+                            if (secName === 'education' && resumeContent.education?.[0]?.items?.some(i => i.trim().length > 0)) {
+                              return (
+                                <div key="education" className="flex flex-col gap-1.5">
+                                  <h2 className="text-[11px] font-bold text-gray-900 tracking-widest uppercase border-b border-gray-200 pb-0.5 font-sans">
+                                    Education
+                                  </h2>
+                                  <ul className="list-disc list-outside pl-4 text-[11px] text-gray-700 space-y-1 font-sans">
+                                    {resumeContent.education[0].items.filter(i => i.trim().length > 0).map((item, idx) => (
+                                      <li key={idx} className="leading-relaxed">{item}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              );
+                            }
+
+                            if (secName === 'skills' && resumeContent.skills?.some(s => s.trim().length > 0)) {
+                              return (
+                                <div key="skills" className="flex flex-col gap-1.5">
+                                  <h2 className="text-[11px] font-bold text-gray-900 tracking-widest uppercase border-b border-gray-200 pb-0.5 font-sans">
+                                    Skills
+                                  </h2>
+                                  <div className="flex flex-wrap gap-1.5 mt-0.5">
+                                    {resumeContent.skills.filter(s => s.trim().length > 0).map((skill, idx) => (
+                                      <span key={idx} className="bg-gray-100 border border-gray-200 text-gray-800 text-[10px] px-2 py-0.5 rounded font-sans">
+                                        {skill}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            if (secName === 'additional' && resumeContent.additional?.[0]?.items?.some(i => i.trim().length > 0)) {
+                              return (
+                                <div key="additional" className="flex flex-col gap-1.5">
+                                  <h2 className="text-[11px] font-bold text-gray-900 tracking-widest uppercase border-b border-gray-200 pb-0.5 font-sans">
+                                    Additional Information
+                                  </h2>
+                                  <ul className="list-disc list-outside pl-4 text-[11px] text-gray-700 space-y-1 font-sans">
+                                    {resumeContent.additional[0].items.filter(i => i.trim().length > 0).map((item, idx) => (
+                                      <li key={idx} className="leading-relaxed">{item}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              );
+                            }
+
+                            return null;
+                          })}
+                        </div>
+
+                        {/* Page footer */}
+                        <div className="text-center text-[9px] text-gray-400 border-t border-gray-100 pt-2.5 font-sans">
+                          StayQualifAI Premium ATS Document
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* No template empty state */
+                <div className="flex flex-col items-center justify-center min-h-[30rem] text-center p-8 bg-canvas rounded-2xl border border-dashed border-gray-300 flex-1 no-print">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    className="w-12 h-12 text-muted mb-3"
+                  >
+                    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+                    <path d="M14 3v5h5M16 13H8M16 17H8M10 9H8" />
+                  </svg>
+                  <p className="text-sm font-semibold text-ink">No Template Selected</p>
+                  <p className="text-xs text-muted mt-1 max-w-[250px]">
+                    Choose a resume template from the left column to begin customizing your resume.
+                  </p>
+                </div>
+              )}
             </div>
 
-            <Button
-              type="submit"
-              disabled={!canSave}
-              className="self-start"
-            >
-              {isBusy ? 'Saving…' : 'Save resume version'}
-            </Button>
-          </form>
-        </Panel>
-      ) : (
-        <Panel aria-label="No template selected">
-          <p className="text-sm text-muted">
-            Select a template above to start building your resume.
-          </p>
-        </Panel>
-      )}
-
-      {/* Semantic job-match analysis (Req 6.2) */}
-      <Panel aria-label="Job match" title="Job Match">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="job-description" className="text-sm font-medium text-muted">
-              Job description
-            </label>
-            <textarea
-              id="job-description"
-              rows={4}
-              value={jobDescription}
-              onChange={(event): void => setJobDescription(event.target.value)}
-              placeholder="Paste the job description to analyze how well your resume matches."
-              className={TEXTAREA_CLASS}
-            />
-          </div>
-          <Button
-            type="button"
-            onClick={(): void => {
-              void handleAnalyzeMatch();
-            }}
-            disabled={
-              resumeContent === null || jobDescription.trim().length === 0 || isBusy
-            }
-            className="self-start"
-          >
-            Analyze match
-          </Button>
-          {matchResult !== null ? <MatchPanel result={matchResult} /> : null}
-        </div>
-      </Panel>
-
-      {/* X-Y-Z achievement bullet generation (Req 7.1) */}
-      <Panel aria-label="Achievement bullets" title="Achievement Bullets">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="experience-input" className="text-sm font-medium text-muted">
-              Describe an experience
-            </label>
-            <textarea
-              id="experience-input"
-              rows={3}
-              value={experienceText}
-              onChange={(event): void => setExperienceText(event.target.value)}
-              placeholder="Describe what you did, and we'll rewrite it as X-Y-Z achievement bullets."
-              className={TEXTAREA_CLASS}
-            />
-          </div>
-          <Button
-            type="button"
-            onClick={(): void => {
-              void handleGenerateBullets();
-            }}
-            disabled={experienceText.trim().length === 0 || isBusy}
-            className="self-start"
-          >
-            Generate bullets
-          </Button>
-          {bullets.length > 0 ? (
-            <ul aria-label="Generated achievement bullets" className="flex flex-col gap-3 mt-2">
-              {bullets.map((bullet, index) => (
-                <li
-                  key={`${index}-${bullet}`}
-                  className="rounded-xl border border-gray-200 bg-canvas px-4 py-3 text-sm text-ink"
+            {/* Bottom Actions: Edit/Preview tabs switch */}
+            {resumeContent !== null ? (
+              <div className="flex justify-end gap-2.5 mt-4 pt-3 border-t border-gray-100 no-print">
+                <button
+                  type="button"
+                  onClick={(): void => setActiveTab('edit')}
+                  className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
+                    activeTab === 'edit'
+                      ? 'bg-ink text-white border border-transparent shadow-sm'
+                      : 'bg-white text-ink border border-gray-300 hover:bg-gray-50'
+                  }`}
                 >
-                  {bullet}
-                </li>
-              ))}
-            </ul>
-          ) : null}
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={(): void => setActiveTab('preview')}
+                  className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
+                    activeTab === 'preview'
+                      ? 'bg-ink text-white border border-transparent shadow-sm'
+                      : 'bg-white text-ink border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  Preview
+                </button>
+              </div>
+            ) : null}
+          </Panel>
         </div>
-      </Panel>
+      </div>
     </div>
   );
 }
