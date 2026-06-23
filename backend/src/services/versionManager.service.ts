@@ -337,3 +337,31 @@ function mapRow(row: ResumeVersionRow): IResumeVersion {
     updatedAt: row.updated_at,
   };
 }
+
+/**
+ * Delete a `Resume_Version` owned by the caller.
+ *
+ * Scoped by authenticated user_id. Throws NotFoundError if the version does
+ * not exist or is not owned by the caller.
+ */
+export async function deleteVersion(
+  supabase: SupabaseClient,
+  userId: string,
+  id: string
+): Promise<IResumeVersion> {
+  const { data, error } = await supabase
+    .from(TABLE)
+    .delete()
+    .eq('id', id)
+    .eq('user_id', userId)
+    .select(COLUMNS)
+    .maybeSingle<ResumeVersionRow>();
+
+  if (error !== null) {
+    throw new InternalError('Failed to delete resume version.', error.message);
+  }
+  if (data === null) {
+    throw new NotFoundError(`Resume version "${id}" was not found.`);
+  }
+  return mapRow(data);
+}

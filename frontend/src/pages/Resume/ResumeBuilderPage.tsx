@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent, JSX } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { Panel } from '../../components/Panel';
 import { MatchPanel } from '../../components/MatchPanel';
 import { useResumeStore } from '../../stores/resume.store';
+import { useAuthStore } from '../../stores/auth.store';
 import type {
   IResumeSection,
   IResumeTemplate,
@@ -106,6 +108,9 @@ export function ResumeBuilderPage(): JSX.Element {
   const matchJob = useResumeStore((state) => state.matchJob);
   const generateBullets = useResumeStore((state) => state.generateBullets);
 
+  const navigate = useNavigate();
+  const identity = useAuthStore((state) => state.identity);
+
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [versionName, setVersionName] = useState<string>('');
   const [jobDescription, setJobDescription] = useState<string>('');
@@ -138,10 +143,18 @@ export function ResumeBuilderPage(): JSX.Element {
   const isBusy = status === 'loading';
 
   const handleSelectTemplate = (type: 'entry' | 'professional' | 'skills' | 'custom'): void => {
+    const defaultContact = {
+      name: identity?.name ?? '',
+      email: identity?.email ?? '',
+      phone: '',
+      location: '',
+      links: [],
+    };
+
     if (type === 'custom') {
       setSelectedTemplateId('custom');
       setResumeContent({
-        contact: resumeContent?.contact ?? { name: '', email: '', phone: '', location: '', links: [] },
+        contact: resumeContent?.contact ?? defaultContact,
         summary: resumeContent?.summary ?? '',
         experience: resumeContent?.experience && resumeContent.experience.length > 0
           ? resumeContent.experience
@@ -173,7 +186,14 @@ export function ResumeBuilderPage(): JSX.Element {
 
     if (template) {
       setSelectedTemplateId(template.id);
-      setResumeContent(scaffoldResume(template, resumeContent));
+      setResumeContent(scaffoldResume(template, resumeContent ?? {
+        contact: defaultContact,
+        summary: '',
+        experience: [],
+        education: [],
+        skills: [],
+        additional: [],
+      }));
     }
   };
 
@@ -252,12 +272,54 @@ export function ResumeBuilderPage(): JSX.Element {
     setResumeContent({ ...resumeContent, [key]: [section] });
   };
 
-  const handleSave = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
-    event.preventDefault();
+  const handleSave = async (event?: FormEvent<HTMLFormElement>): Promise<void> => {
+    if (event) {
+      event.preventDefault();
+    }
     if (!resumeContent || versionName.trim().length === 0) {
       return;
     }
-    await createVersion(versionName.trim(), resumeContent);
+
+    // Client-side validation before sending request to backend
+    if (resumeContent.contact.name.trim().length === 0) {
+      useResumeStore.setState({
+        status: 'error',
+        error: {
+          type: 'ValidationError',
+          message: 'Required section "contact" is incomplete: a name is required.',
+        },
+      });
+      return;
+    }
+    if (resumeContent.contact.email.trim().length === 0) {
+      useResumeStore.setState({
+        status: 'error',
+        error: {
+          type: 'ValidationError',
+          message: 'Required section "contact" is incomplete: an email is required.',
+        },
+      });
+      return;
+    }
+    const hasExperience = resumeContent.experience.some((section) =>
+      section.items.some((item) => item.trim().length > 0)
+    );
+    if (!hasExperience) {
+      useResumeStore.setState({
+        status: 'error',
+        error: {
+          type: 'ValidationError',
+          message: 'Required section "experience" must not be empty.',
+        },
+      });
+      return;
+    }
+
+    const result = await createVersion(versionName.trim(), resumeContent);
+    if (result !== null) {
+      setVersionName('');
+      navigate('/resume/versions');
+    }
   };
 
   const handleAnalyzeMatch = async (): Promise<void> => {
@@ -353,14 +415,8 @@ export function ResumeBuilderPage(): JSX.Element {
                 </Button>
                 <Button
                   type="button"
-                  onClick={(e): void => {
-                    const form = document.getElementById('resume-builder-form') as HTMLFormElement | null;
-                    if (form) {
-                      form.requestSubmit();
-                    } else {
-                      // Fallback if form not active in DOM (e.g. in preview mode)
-                      void handleSave(e as unknown as FormEvent<HTMLFormElement>);
-                    }
+                  onClick={(): void => {
+                    void handleSave();
                   }}
                   disabled={!canSave}
                 >

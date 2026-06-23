@@ -23,6 +23,7 @@ import express, { type Router } from 'express';
 import {
   activateVersionHandler,
   cloneVersionHandler,
+  deleteVersionHandler,
   generateBulletsHandler,
   listTemplatesHandler,
   listVersionsHandler,
@@ -104,6 +105,14 @@ export function createResumeRouter(): Router {
     requireAuth,
     validate({ params: versionIdParamsSchema }),
     activateVersionHandler
+  );
+
+  // DELETE /versions/:id — delete a version.
+  router.delete(
+    '/versions/:id',
+    requireAuth,
+    validate({ params: versionIdParamsSchema }),
+    deleteVersionHandler
   );
 
   // POST /match — semantic match; job description REQUIRED (Req 6.3).

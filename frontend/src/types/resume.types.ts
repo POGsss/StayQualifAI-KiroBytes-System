@@ -51,6 +51,7 @@ export interface IAtsScanResult {
   score: number; // 0..100 inclusive (Compatibility_Score)
   factors: IScoreFactor[]; // contributing factors
   keywordSuggestions: IKeywordSuggestion[];
+  recommendationsSummary: string;
 }
 
 export interface IScoreFactor {

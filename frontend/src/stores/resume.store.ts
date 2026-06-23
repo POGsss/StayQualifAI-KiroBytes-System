@@ -26,6 +26,7 @@ import {
   activateVersion as activateVersionRequest,
   cloneVersion as cloneVersionRequest,
   createVersion as createVersionRequest,
+  deleteVersion as deleteVersionRequest,
   generateBullets as generateBulletsRequest,
   listTemplates as listTemplatesRequest,
   listVersions as listVersionsRequest,
@@ -98,6 +99,7 @@ export interface IResumeActions {
   cloneVersion: (id: string) => Promise<IResumeVersion | null>;
   renameVersion: (id: string, name: string) => Promise<IResumeVersion | null>;
   activateVersion: (id: string) => Promise<IResumeVersion | null>;
+  deleteVersion: (id: string) => Promise<IResumeVersion | null>;
   setResumeContent: (content: IStructuredResume | null) => void;
   clearError: () => void;
   reset: () => void;
@@ -323,6 +325,24 @@ export const useResumeStore = create<IResumeStore>((set, get) => ({
         status: 'idle',
       });
       return activated;
+    } catch (cause) {
+      set({ status: 'error', error: toStoreError(cause) });
+      return null;
+    }
+  },
+
+  deleteVersion: async (id: string): Promise<IResumeVersion | null> => {
+    set({ status: 'loading', error: null });
+    try {
+      const deleted = await deleteVersionRequest(id);
+      const versions = get().versions.filter((v) => v.id !== id);
+      const currentActive = get().activeVersion;
+      set({
+        versions,
+        activeVersion: currentActive !== null && currentActive.id === id ? null : currentActive,
+        status: 'idle',
+      });
+      return deleted;
     } catch (cause) {
       set({ status: 'error', error: toStoreError(cause) });
       return null;

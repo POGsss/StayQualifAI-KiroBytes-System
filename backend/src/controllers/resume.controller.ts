@@ -39,6 +39,7 @@ import type {
 import { AuthError, ValidationError } from '../utils/errors.js';
 import {
   cloneVersion,
+  deleteVersion,
   generateBullets,
   listTemplates,
   listVersions,
@@ -336,5 +337,17 @@ export const generateBulletsHandler: RequestHandler = asyncHandler(async (req, r
   const input: IBulletInput = { experience: body.experience };
 
   const result: XyzBullet[] = await generateBullets(input);
+  res.status(200).json(successEnvelope(req, result));
+});
+
+/**
+ * `DELETE /versions/:id` — delete a resume version owned by the caller.
+ */
+export const deleteVersionHandler: RequestHandler = asyncHandler(async (req, res) => {
+  const supabase = requireSupabase(req);
+  const userId = requireUserId(req);
+  const id = requireParam(req, 'id');
+
+  const result: IResumeVersion = await deleteVersion(supabase, userId, id);
   res.status(200).json(successEnvelope(req, result));
 });

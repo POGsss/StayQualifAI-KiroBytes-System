@@ -118,6 +118,7 @@ export function scanResume(input: IScanInput): IAtsScanResult {
         },
       ],
       keywordSuggestions: [],
+      recommendationsSummary: 'No extractable content found in the resume.',
     };
   }
 
@@ -142,6 +143,7 @@ export function scanResume(input: IScanInput): IAtsScanResult {
   }
 
   let keywordSuggestions: IKeywordSuggestion[] = [];
+  let recommendationsSummary = '';
 
   if (hasJobDescription) {
     const coverage = evaluateKeywordCoverage(jobDescription, resumeText);
@@ -153,12 +155,22 @@ export function scanResume(input: IScanInput): IAtsScanResult {
       detail: buildCoverageDetail(coverage),
     });
     keywordSuggestions = buildSuggestions(jobDescription, resumeText);
+
+    if (keywordSuggestions.length > 0) {
+      const termsList = keywordSuggestions.map((s) => s.term).join(', ');
+      recommendationsSummary = `Your resume is missing key industry terms present in the job description: ${termsList}. Consider integrating them where relevant.`;
+    } else {
+      recommendationsSummary = 'Your resume has excellent keyword alignment with the job description. No missing keywords were identified.';
+    }
+  } else {
+    recommendationsSummary = 'Please provide a job description to receive specific keyword optimization recommendations.';
   }
 
   return {
     score: clampScore(rawScore),
     factors,
     keywordSuggestions,
+    recommendationsSummary,
   };
 }
 
@@ -298,8 +310,7 @@ function buildSuggestions(jobDescription: string, resumeText: string): IKeywordS
     const term: string = stemToTerm.get(stem) ?? stem;
     return {
       term,
-      reason:
-        'Appears in the job description but is missing from your resume. Consider adding it where it is truthful and relevant.',
+      reason: `"${term}" appears in the job description but is missing from your resume. Consider adding it where it is truthful and relevant.`,
     };
   });
 }

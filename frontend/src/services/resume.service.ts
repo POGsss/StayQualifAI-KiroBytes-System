@@ -125,7 +125,7 @@ async function send<T>(path: string, init: RequestInit): Promise<T> {
 /** Convenience wrapper for JSON-body POST/PATCH requests. */
 async function sendJson<T>(
   path: string,
-  method: 'POST' | 'PATCH',
+  method: 'POST' | 'PATCH' | 'DELETE',
   body?: unknown,
 ): Promise<T> {
   const init: RequestInit = {
@@ -224,6 +224,11 @@ export async function activateVersion(id: string): Promise<IResumeVersion> {
     `/versions/${encodeURIComponent(id)}/activate`,
     'POST',
   );
+}
+
+/** DELETE `/versions/:id` — delete a version. */
+export async function deleteVersion(id: string): Promise<IResumeVersion> {
+  return sendJson<IResumeVersion>(`/versions/${encodeURIComponent(id)}`, 'DELETE');
 }
 
 /** POST `/match` — semantic match analysis against a JD. */

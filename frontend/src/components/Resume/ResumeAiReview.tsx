@@ -50,6 +50,10 @@ function ReviewBlock({
             </li>
           ))}
         </ul>
+      ) : heading === 'ATS Recommendations Summary' ? (
+        <p className="text-sm text-ink leading-relaxed" aria-label={heading}>
+          {items[0]}
+        </p>
       ) : (
         <ul className="flex flex-col gap-1.5 text-sm text-ink" aria-label={heading}>
           {items.map((item, index) => (
@@ -112,7 +116,7 @@ export function ResumeAiReview({
             emptyHint="Your resume already covers the relevant terms."
           />
           <ReviewBlock
-            heading="ATS Recommendations"
+            heading="ATS Recommendations Summary"
             items={recommendations}
             tone="neutral"
             emptyHint="No additional recommendations."
@@ -121,7 +125,7 @@ export function ResumeAiReview({
       ) : (
         <p className="text-sm text-muted">
           Upload and scan a resume to see AI-powered strengths, weaknesses, and
-          ATS recommendations.
+          an ATS recommendations summary.
         </p>
       )}
     </section>

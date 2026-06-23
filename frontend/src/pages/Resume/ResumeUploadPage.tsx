@@ -130,13 +130,14 @@ function buildReport(
     }
   }
 
-  lines.push('', 'Missing / suggested keywords');
-  if (scan.keywordSuggestions.length === 0) {
-    lines.push('  (none)');
+  lines.push('', 'ATS Recommendations Summary');
+  if (scan.recommendationsSummary) {
+    lines.push(`  ${scan.recommendationsSummary}`);
+  } else if (scan.keywordSuggestions.length === 0) {
+    lines.push('  Your resume has excellent keyword alignment with the job description. No missing keywords were identified.');
   } else {
-    for (const suggestion of scan.keywordSuggestions) {
-      lines.push(`  - ${suggestion.term}: ${suggestion.reason}`);
-    }
+    const terms = scan.keywordSuggestions.map((s) => s.term).join(', ');
+    lines.push(`  Your resume is missing key industry terms present in the job description: ${terms}. Consider integrating them where relevant.`);
   }
 
   return lines.join('\n');
@@ -184,14 +185,6 @@ export function ResumeUploadPage(): JSX.Element {
     })();
   }, [file, runScan, uploadResume]);
 
-  // Re-run the ATS analysis against the already-parsed resume content.
-  const handleAnalyze = useCallback((): void => {
-    if (resumeContent === null) {
-      return;
-    }
-    void runScan(resumeContent);
-  }, [resumeContent, runScan]);
-
   const handleDownloadReport = useCallback((): void => {
     if (scanResult === null) {
       return;
@@ -227,17 +220,24 @@ export function ResumeUploadPage(): JSX.Element {
     () => (scanResult?.keywordSuggestions ?? []).map((suggestion) => suggestion.term),
     [scanResult],
   );
-  const recommendations = useMemo(
-    () => (scanResult?.keywordSuggestions ?? []).map((suggestion) => suggestion.reason),
-    [scanResult],
-  );
+  const recommendations = useMemo(() => {
+    if (!scanResult) return [];
+    if (scanResult.recommendationsSummary) {
+      return [scanResult.recommendationsSummary];
+    }
+    if (scanResult.keywordSuggestions.length > 0) {
+      const terms = scanResult.keywordSuggestions.map((s) => s.term).join(', ');
+      return [`Your resume is missing key industry terms present in the job description: ${terms}. Consider integrating them where relevant.`];
+    }
+    return ['Your resume has excellent keyword alignment with the job description. No missing keywords were identified.'];
+  }, [scanResult]);
 
   const hasResults = scanResult !== null;
 
   return (
     <div className="flex flex-col gap-6">
       {/* Error banner */}
-      {status === 'error' && error !== null ? (
+      {error !== null ? (
         <p
           role="alert"
           className="rounded-2xl border border-accent-red/40 bg-accent-red/10 px-4 py-3 text-sm text-ink"
@@ -290,12 +290,6 @@ export function ResumeUploadPage(): JSX.Element {
                 disabled={!hasResults}
               >
                 Download Report
-              </Button>
-              <Button
-                onClick={handleAnalyze}
-                disabled={resumeContent === null || isLoading}
-              >
-                {isLoading ? 'Analyzing…' : 'Analyze Resume'}
               </Button>
             </div>
           </section>

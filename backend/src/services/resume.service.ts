@@ -54,6 +54,7 @@ import { parseResume, parseResumeFromStorage } from './resumeParser.service.js';
 import type { ResumeFileInput } from './resumeParser.service.js';
 import {
   cloneVersion as cloneVersionImpl,
+  deleteVersion as deleteVersionImpl,
   listVersions as listVersionsImpl,
   renameVersion as renameVersionImpl,
   saveVersion as saveVersionImpl,
@@ -205,4 +206,15 @@ export async function setActiveVersion(
   id: string
 ): Promise<IResumeVersion> {
   return setActiveVersionImpl(supabase, userId, id);
+}
+
+/**
+ * Delete a `Resume_Version` owned by the caller.
+ */
+export async function deleteVersion(
+  supabase: SupabaseClient,
+  userId: string,
+  id: string
+): Promise<IResumeVersion> {
+  return deleteVersionImpl(supabase, userId, id);
 }

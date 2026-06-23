@@ -18,6 +18,7 @@ import {
 } from 'react';
 
 import { Button } from '../Button';
+import { Textarea } from '../Textarea';
 
 /** File extensions accepted by the upload control (Requirement 1.1). */
 const ACCEPTED_FILE_TYPES = '.pdf,.docx';
@@ -140,14 +141,13 @@ export function ResumeUploadCard({
         <label htmlFor="job-description" className="text-sm font-medium text-ink">
           Job description <span className="text-muted">(optional)</span>
         </label>
-        <textarea
+        <Textarea
           id="job-description"
           name="job-description"
           value={jobDescription}
           onChange={(event): void => onJobDescriptionChange(event.target.value)}
           rows={3}
           placeholder="Paste a target job description to score keyword match and surface gaps."
-          className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
       </div>
 

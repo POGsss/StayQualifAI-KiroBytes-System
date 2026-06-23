@@ -6,6 +6,7 @@ import { Input } from '../../components/Input';
 import { Panel } from '../../components/Panel';
 import { useResumeStore } from '../../stores/resume.store';
 import type { IResumeVersion } from '../../types/resume.types';
+import { Pencil, Check, X } from 'lucide-react';
 
 /**
  * ResumeVersionsPage — Resume Version Snapshot Manager (Bauhaus redesign).
@@ -44,6 +45,7 @@ export function ResumeVersionsPage(): JSX.Element {
   const cloneVersion = useResumeStore((state) => state.cloneVersion);
   const renameVersion = useResumeStore((state) => state.renameVersion);
   const activateVersion = useResumeStore((state) => state.activateVersion);
+  const deleteVersion = useResumeStore((state) => state.deleteVersion);
 
   // Id of the version currently in inline-rename mode, plus its draft name.
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -126,7 +128,7 @@ export function ResumeVersionsPage(): JSX.Element {
                   <div className="min-w-0 flex-1">
                     {isEditing ? (
                       <form
-                        className="flex flex-wrap items-center gap-3"
+                        className="flex items-center gap-2"
                         onSubmit={(event): void => {
                           void submitRename(event, version.id);
                         }}
@@ -143,25 +145,40 @@ export function ResumeVersionsPage(): JSX.Element {
                             autoFocus
                           />
                         </div>
-                        <Button
+                        <button
                           type="submit"
                           disabled={!canSave || isLoading}
+                          aria-label="Save name"
+                          className="rounded-md p-2 text-accent-blue hover:bg-accent-blue/10 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          Save
-                        </Button>
-                        <Button
+                          <Check className="size-5" aria-hidden="true" />
+                        </button>
+                        <button
                           type="button"
-                          variant="subtle"
                           onClick={cancelRename}
+                          disabled={isLoading}
+                          aria-label="Cancel rename"
+                          className="rounded-md p-2 text-muted hover:bg-gray-200 hover:text-ink transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          Cancel
-                        </Button>
+                          <X className="size-5" aria-hidden="true" />
+                        </button>
                       </form>
                     ) : (
                       <div className="flex flex-wrap items-center gap-2">
                         <h2 className="truncate text-lg font-bold text-ink">
                           {version.name}
                         </h2>
+                        <button
+                          type="button"
+                          onClick={(): void => {
+                            beginRename(version);
+                          }}
+                          disabled={isLoading}
+                          aria-label={`Rename ${version.name}`}
+                          className="rounded-md p-1.5 text-muted hover:bg-gray-200 hover:text-ink transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <Pencil className="size-4" aria-hidden="true" />
+                        </button>
                         {version.isActive ? (
                           <span className="inline-flex items-center rounded-full bg-accent-blue/10 px-2.5 py-0.5 text-xs font-semibold text-accent-blue">
                             Active
@@ -205,15 +222,19 @@ export function ResumeVersionsPage(): JSX.Element {
                       >
                         Clone
                       </Button>
+
                       <Button
                         variant="subtle"
                         onClick={(): void => {
-                          beginRename(version);
+                          if (window.confirm(`Are you sure you want to delete "${version.name}"?`)) {
+                            void deleteVersion(version.id);
+                          }
                         }}
                         disabled={isLoading}
-                        aria-label={`Rename ${version.name}`}
+                        className="border-none text-accent-red hover:bg-accent-red/10"
+                        aria-label={`Delete ${version.name}`}
                       >
-                        Rename
+                        Delete
                       </Button>
                     </div>
                   ) : null}

@@ -177,10 +177,10 @@ export function tokenize(text: string): string[] {
 }
 
 /**
- * Returns true when a (already lowercased) token is an English stopword.
+ * Returns true when a (already lowercased) token is an English stopword or is purely numeric.
  */
 export function isStopword(token: string): boolean {
-  return STOPWORDS.has(token);
+  return STOPWORDS.has(token) || /^[0-9]+$/.test(token);
 }
 
 // --- Porter stemmer ---------------------------------------------------------
