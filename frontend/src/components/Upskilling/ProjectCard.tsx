@@ -137,9 +137,7 @@ export function ProjectCard({
             'inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
             'disabled:cursor-not-allowed disabled:opacity-50',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2',
-            isSaved
-              ? 'border border-accent-red/30 text-accent-red hover:bg-accent-red/10'
-              : 'bg-primary text-white hover:bg-primary-600',
+            'bg-sidebar text-white hover:bg-black',
           ].join(' ')}
         >
           {isSaved
