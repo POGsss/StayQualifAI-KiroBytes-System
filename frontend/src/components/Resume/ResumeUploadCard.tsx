@@ -138,8 +138,8 @@ export function ResumeUploadCard({
 
       {/* Optional JD to power the keyword-match score */}
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="job-description" className="text-sm font-medium text-ink">
-          Job description <span className="text-muted">(optional)</span>
+        <label htmlFor="job-description" className="text-sm font-medium text-muted">
+          Job Description (optional)
         </label>
         <Textarea
           id="job-description"

@@ -6,7 +6,12 @@ import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { Panel } from '../../components/Panel';
 import { MatchPanel } from '../../components/MatchPanel';
-import { DocumentPageNav, ResumeDocumentFrame } from '../../components/Resume';
+import {
+  DocumentPageNav,
+  ResumeDocumentFrame,
+  ResumeTemplatePreview,
+} from '../../components/Resume';
+import type { ResumeTemplateKind } from '../../components/Resume';
 import { useResumeStore } from '../../stores/resume.store';
 import { useAuthStore } from '../../stores/auth.store';
 import type {
@@ -367,6 +372,25 @@ export function ResumeBuilderPage(): JSX.Element {
     return selectedTemplate.sections.filter((s) => s !== 'contact');
   }, [selectedTemplate]);
 
+  // Resolve which of the four document layouts the preview should render.
+  const templateKind = useMemo<ResumeTemplateKind>(() => {
+    if (selectedTemplateId === 'custom') {
+      return 'custom';
+    }
+    const template = templates.find((t) => t.id === selectedTemplateId);
+    const name = template?.name.toLowerCase() ?? '';
+    if (name.includes('entry') || name.includes('graduate')) {
+      return 'entry';
+    }
+    if (name.includes('skill')) {
+      return 'skills';
+    }
+    if (name.includes('professional') || name.includes('chronological')) {
+      return 'professional';
+    }
+    return 'custom';
+  }, [templates, selectedTemplateId]);
+
   return (
     <div className="flex flex-col gap-6">
       {error !== null ? (
@@ -547,7 +571,7 @@ export function ResumeBuilderPage(): JSX.Element {
           <Panel
             aria-label="Resume Preview"
             title="Resume Workspace"
-            className="flex flex-col min-h-[42rem] justify-between relative print-resume-page"
+            className="flex flex-col relative print-resume-page"
           >
             {/* Top Workspace Content */}
             <div className="flex-1 flex flex-col mb-4">
@@ -558,14 +582,13 @@ export function ResumeBuilderPage(): JSX.Element {
                     <form
                       id="resume-builder-form"
                       onSubmit={handleSave}
-                      className="flex flex-col gap-6 max-h-[68vh] overflow-y-auto pr-1 no-print"
+                      className="flex flex-col gap-6 pr-1 no-print"
                     >
                       {sectionTypes.includes('contact') ? (
-                        <fieldset className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-canvas p-4">
-                          <legend className="px-2 text-xs font-bold uppercase tracking-wider text-muted">Contact Info</legend>
+                        <fieldset className="flex flex-col gap-6">
                           <div className="grid gap-3 sm:grid-cols-2">
-                            <div className="flex flex-col gap-1">
-                              <label htmlFor="contact-name" className="text-xs font-medium text-muted">
+                            <div className="flex flex-col gap-1.5">
+                              <label htmlFor="contact-name" className="text-sm font-medium text-muted">
                                 Full name
                               </label>
                               <Input
@@ -575,8 +598,8 @@ export function ResumeBuilderPage(): JSX.Element {
                                 onChange={(event): void => updateContactField('name', event.target.value)}
                               />
                             </div>
-                            <div className="flex flex-col gap-1">
-                              <label htmlFor="contact-email" className="text-xs font-medium text-muted">
+                            <div className="flex flex-col gap-1.5">
+                              <label htmlFor="contact-email" className="text-sm font-medium text-muted">
                                 Email
                               </label>
                               <Input
@@ -586,36 +609,36 @@ export function ResumeBuilderPage(): JSX.Element {
                                 onChange={(event): void => updateContactField('email', event.target.value)}
                               />
                             </div>
-                            <div className="flex flex-col gap-1">
-                              <label htmlFor="contact-phone" className="text-xs font-medium text-muted">
-                                Phone
-                              </label>
-                              <Input
-                                id="contact-phone"
-                                type="tel"
-                                value={resumeContent.contact.phone ?? ''}
-                                onChange={(event): void => updateContactField('phone', event.target.value)}
-                              />
-                            </div>
-                            <div className="flex flex-col gap-1">
-                              <label htmlFor="contact-location" className="text-xs font-medium text-muted">
-                                Location
-                              </label>
-                              <Input
-                                id="contact-location"
-                                type="text"
-                                value={resumeContent.contact.location ?? ''}
-                                onChange={(event): void => updateContactField('location', event.target.value)}
-                              />
-                            </div>
                           </div>
-                          <div className="flex flex-col gap-1">
-                            <label htmlFor="contact-links" className="text-xs font-medium text-muted">
+                          <div className="flex flex-col gap-1.5">
+                            <label htmlFor="contact-phone" className="text-sm font-medium text-muted">
+                              Phone
+                            </label>
+                            <Input
+                              id="contact-phone"
+                              type="tel"
+                              value={resumeContent.contact.phone ?? ''}
+                              onChange={(event): void => updateContactField('phone', event.target.value)}
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1.5">
+                            <label htmlFor="contact-location" className="text-sm font-medium text-muted">
+                              Location
+                            </label>
+                            <Input
+                              id="contact-location"
+                              type="text"
+                              value={resumeContent.contact.location ?? ''}
+                              onChange={(event): void => updateContactField('location', event.target.value)}
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1.5">
+                            <label htmlFor="contact-links" className="text-sm font-medium text-muted">
                               Links (one per line)
                             </label>
                             <textarea
                               id="contact-links"
-                              rows={2}
+                              rows={4}
                               value={resumeContent.contact.links.join('\n')}
                               onChange={(event): void => updateLinks(event.target.value)}
                               className={TEXTAREA_CLASS}
@@ -625,13 +648,13 @@ export function ResumeBuilderPage(): JSX.Element {
                       ) : null}
 
                       {sectionTypes.includes('summary') ? (
-                        <div className="flex flex-col gap-1">
-                          <label htmlFor="summary" className="text-xs font-bold uppercase tracking-wider text-muted">
+                        <div className="flex flex-col gap-1.5">
+                          <label htmlFor="summary" className="text-sm font-medium text-muted">
                             Professional Summary
                           </label>
                           <textarea
                             id="summary"
-                            rows={3}
+                            rows={4}
                             value={resumeContent.summary}
                             onChange={(event): void => updateSummary(event.target.value)}
                             className={TEXTAREA_CLASS}
@@ -640,13 +663,13 @@ export function ResumeBuilderPage(): JSX.Element {
                       ) : null}
 
                       {sectionTypes.includes('experience') ? (
-                        <div className="flex flex-col gap-1">
-                          <label htmlFor="experience-section" className="text-xs font-bold uppercase tracking-wider text-muted">
+                        <div className="flex flex-col gap-1.5">
+                          <label htmlFor="experience-section" className="text-sm font-medium text-muted">
                             Experience (one bullet per line)
                           </label>
                           <textarea
                             id="experience-section"
-                            rows={5}
+                            rows={4}
                             value={itemsToLines(resumeContent.experience[0])}
                             onChange={(event): void => updateListSection('experience', event.target.value)}
                             className={TEXTAREA_CLASS}
@@ -655,13 +678,13 @@ export function ResumeBuilderPage(): JSX.Element {
                       ) : null}
 
                       {sectionTypes.includes('education') ? (
-                        <div className="flex flex-col gap-1">
-                          <label htmlFor="education-section" className="text-xs font-bold uppercase tracking-wider text-muted">
+                        <div className="flex flex-col gap-1.5">
+                          <label htmlFor="education-section" className="text-sm font-medium text-muted">
                             Education (one entry per line)
                           </label>
                           <textarea
                             id="education-section"
-                            rows={3}
+                            rows={4}
                             value={itemsToLines(resumeContent.education[0])}
                             onChange={(event): void => updateListSection('education', event.target.value)}
                             className={TEXTAREA_CLASS}
@@ -670,8 +693,8 @@ export function ResumeBuilderPage(): JSX.Element {
                       ) : null}
 
                       {sectionTypes.includes('skills') ? (
-                        <div className="flex flex-col gap-1">
-                          <label htmlFor="skills" className="text-xs font-bold uppercase tracking-wider text-muted">
+                        <div className="flex flex-col gap-1.5">
+                          <label htmlFor="skills" className="text-sm font-medium text-muted">
                             Skills (comma separated)
                           </label>
                           <Input
@@ -684,13 +707,13 @@ export function ResumeBuilderPage(): JSX.Element {
                       ) : null}
 
                       {sectionTypes.includes('additional') ? (
-                        <div className="flex flex-col gap-1">
-                          <label htmlFor="additional-section" className="text-xs font-bold uppercase tracking-wider text-muted">
+                        <div className="flex flex-col gap-1.5">
+                          <label htmlFor="additional-section" className="text-sm font-medium text-muted">
                             Additional (one entry per line)
                           </label>
                           <textarea
                             id="additional-section"
-                            rows={3}
+                            rows={4}
                             value={itemsToLines(resumeContent.additional[0])}
                             onChange={(event): void => updateListSection('additional', event.target.value)}
                             className={TEXTAREA_CLASS}
@@ -717,111 +740,11 @@ export function ResumeBuilderPage(): JSX.Element {
                           </button>
                         }
                       >
-                        <div className="print-resume-page bg-white shadow-sm border border-gray-300 w-full p-10 font-serif text-gray-800 aspect-[8.5/11] flex flex-col justify-between overflow-hidden">
-                        {/* Header contact */}
-                        <div className="text-center border-b border-gray-300 pb-3 mb-5">
-                          <h1 className="text-2xl font-bold text-gray-900 tracking-wide uppercase font-sans">
-                            {resumeContent.contact.name || "YOUR NAME"}
-                          </h1>
-                          <div className="text-[11px] text-gray-600 flex flex-wrap justify-center gap-x-2 gap-y-1 mt-1.5 font-sans">
-                            {resumeContent.contact.email && <span>{resumeContent.contact.email}</span>}
-                            {resumeContent.contact.phone && <span>• {resumeContent.contact.phone}</span>}
-                            {resumeContent.contact.location && <span>• {resumeContent.contact.location}</span>}
-                          </div>
-                          {resumeContent.contact.links && resumeContent.contact.links.length > 0 && (
-                            <div className="text-[10px] text-gray-500 mt-1 flex flex-wrap justify-center gap-x-2 font-sans">
-                              {resumeContent.contact.links.filter(l => l.trim().length > 0).map((link, idx) => (
-                                <span key={idx} className="hover:underline">{link}</span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Document Content ordered dynamically */}
-                        <div className="flex-1 flex flex-col gap-5 text-left">
-                          {orderedSections.map((secName) => {
-                            if (secName === 'summary' && resumeContent.summary) {
-                              return (
-                                <div key="summary" className="flex flex-col gap-1.5">
-                                  <h2 className="text-[11px] font-bold text-gray-900 tracking-widest uppercase border-b border-gray-200 pb-0.5 font-sans">
-                                    Professional Summary
-                                  </h2>
-                                  <p className="text-[11px] text-gray-700 leading-relaxed font-sans">{resumeContent.summary}</p>
-                                </div>
-                              );
-                            }
-
-                            if (secName === 'experience' && resumeContent.experience?.[0]?.items?.some(i => i.trim().length > 0)) {
-                              return (
-                                <div key="experience" className="flex flex-col gap-1.5">
-                                  <h2 className="text-[11px] font-bold text-gray-900 tracking-widest uppercase border-b border-gray-200 pb-0.5 font-sans">
-                                    Experience
-                                  </h2>
-                                  <ul className="list-disc list-outside pl-4 text-[11px] text-gray-700 space-y-1 font-sans">
-                                    {resumeContent.experience[0].items.filter(i => i.trim().length > 0).map((item, idx) => (
-                                      <li key={idx} className="leading-relaxed">{item}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              );
-                            }
-
-                            if (secName === 'education' && resumeContent.education?.[0]?.items?.some(i => i.trim().length > 0)) {
-                              return (
-                                <div key="education" className="flex flex-col gap-1.5">
-                                  <h2 className="text-[11px] font-bold text-gray-900 tracking-widest uppercase border-b border-gray-200 pb-0.5 font-sans">
-                                    Education
-                                  </h2>
-                                  <ul className="list-disc list-outside pl-4 text-[11px] text-gray-700 space-y-1 font-sans">
-                                    {resumeContent.education[0].items.filter(i => i.trim().length > 0).map((item, idx) => (
-                                      <li key={idx} className="leading-relaxed">{item}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              );
-                            }
-
-                            if (secName === 'skills' && resumeContent.skills?.some(s => s.trim().length > 0)) {
-                              return (
-                                <div key="skills" className="flex flex-col gap-1.5">
-                                  <h2 className="text-[11px] font-bold text-gray-900 tracking-widest uppercase border-b border-gray-200 pb-0.5 font-sans">
-                                    Skills
-                                  </h2>
-                                  <div className="flex flex-wrap gap-1.5 mt-0.5">
-                                    {resumeContent.skills.filter(s => s.trim().length > 0).map((skill, idx) => (
-                                      <span key={idx} className="bg-gray-100 border border-gray-200 text-gray-800 text-[10px] px-2 py-0.5 rounded font-sans">
-                                        {skill}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              );
-                            }
-
-                            if (secName === 'additional' && resumeContent.additional?.[0]?.items?.some(i => i.trim().length > 0)) {
-                              return (
-                                <div key="additional" className="flex flex-col gap-1.5">
-                                  <h2 className="text-[11px] font-bold text-gray-900 tracking-widest uppercase border-b border-gray-200 pb-0.5 font-sans">
-                                    Additional Information
-                                  </h2>
-                                  <ul className="list-disc list-outside pl-4 text-[11px] text-gray-700 space-y-1 font-sans">
-                                    {resumeContent.additional[0].items.filter(i => i.trim().length > 0).map((item, idx) => (
-                                      <li key={idx} className="leading-relaxed">{item}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              );
-                            }
-
-                            return null;
-                          })}
-                        </div>
-
-                        {/* Page footer */}
-                        <div className="text-center text-[9px] text-gray-400 border-t border-gray-100 pt-2.5 font-sans">
-                          StayQualifAI Premium ATS Document
-                        </div>
-                      </div>
+                        <ResumeTemplatePreview
+                          kind={templateKind}
+                          content={resumeContent}
+                          orderedSections={orderedSections}
+                        />
                       </ResumeDocumentFrame>
                     </div>
                   )}
@@ -847,31 +770,25 @@ export function ResumeBuilderPage(): JSX.Element {
               )}
             </div>
 
-            {/* Bottom Actions: Edit/Preview tabs switch */}
+            {/* Bottom Actions: Edit/Preview tabs switch — sits directly below the
+                workspace content with no separating border (mirrors the Scanner's
+                action row). */}
             {resumeContent !== null ? (
-              <div className="flex justify-end gap-2.5 mt-4 pt-3 border-t border-gray-100 no-print">
-                <button
-                  type="button"
+              <div className="flex justify-end gap-2.5 no-print">
+                <Button
+                  variant={activeTab === 'edit' ? 'primary' : 'outline'}
+                  aria-pressed={activeTab === 'edit'}
                   onClick={(): void => setActiveTab('edit')}
-                  className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
-                    activeTab === 'edit'
-                      ? 'bg-ink text-white border border-transparent shadow-sm'
-                      : 'bg-white text-ink border border-gray-300 hover:bg-gray-50'
-                  }`}
                 >
                   Edit
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  variant={activeTab === 'preview' ? 'primary' : 'outline'}
+                  aria-pressed={activeTab === 'preview'}
                   onClick={(): void => setActiveTab('preview')}
-                  className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
-                    activeTab === 'preview'
-                      ? 'bg-ink text-white border border-transparent shadow-sm'
-                      : 'bg-white text-ink border border-gray-300 hover:bg-gray-50'
-                  }`}
                 >
                   Preview
-                </button>
+                </Button>
               </div>
             ) : null}
           </Panel>

@@ -12,3 +12,8 @@ export { ResumeAiReview } from './ResumeAiReview';
 export type { IResumeAiReviewProps } from './ResumeAiReview';
 export { ResumeUploadCard } from './ResumeUploadCard';
 export type { IResumeUploadCardProps } from './ResumeUploadCard';
+export { ResumeTemplatePreview } from './ResumeTemplates';
+export type {
+  IResumeTemplatePreviewProps,
+  ResumeTemplateKind,
+} from './ResumeTemplates';

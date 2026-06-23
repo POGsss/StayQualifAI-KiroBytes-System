@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import type { JSX } from 'react';
 
-import { Button } from '../Button';
 import type { CostClassification, ISavedCourse } from '../../types/upskilling.types';
 
 /**
@@ -57,12 +56,18 @@ export function SavedCourseCard({ course, onDelete }: SavedCourseCardProps): JSX
         <span className="font-medium text-ink">{course.provider}</span>
       </div>
 
-      {/* Actions: external link + Delete (pinned to the bottom) */}
+      {/* Actions: external link + Delete (pinned to the bottom) — styled to
+          match the ProjectCard action buttons for cross-module consistency. */}
       <div className="mt-auto flex items-center gap-2 pt-1">
-        <Button
+        <button
           type="button"
           onClick={() => window.open(course.url, '_blank', 'noopener,noreferrer')}
-          size="sm"
+          className={[
+            'inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+            'disabled:cursor-not-allowed disabled:opacity-50',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2',
+            'bg-sidebar text-white hover:bg-black',
+          ].join(' ')}
         >
           View course
           <svg
@@ -78,15 +83,17 @@ export function SavedCourseCard({ course, onDelete }: SavedCourseCardProps): JSX
               clipRule="evenodd"
             />
           </svg>
-        </Button>
+        </button>
 
-        <Button
+        <button
           type="button"
           onClick={() => void handleDelete()}
           disabled={deleting}
-          variant="outline"
-          size="sm"
-          className="text-accent-red hover:bg-accent-red/10 hover:text-accent-red border-accent-red/20 focus-visible:ring-accent-red/40"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-4 py-2
+            text-sm font-medium text-ink transition-colors hover:bg-canvas
+            disabled:cursor-not-allowed disabled:opacity-50
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50
+            focus-visible:ring-offset-2"
         >
           <svg
             className="h-4 w-4 mr-1"
@@ -103,7 +110,7 @@ export function SavedCourseCard({ course, onDelete }: SavedCourseCardProps): JSX
             />
           </svg>
           {deleting ? 'Deleting…' : 'Delete'}
-        </Button>
+        </button>
       </div>
     </article>
   );

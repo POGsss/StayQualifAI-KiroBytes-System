@@ -37,7 +37,7 @@ export function BauhausWordmark({
 }): JSX.Element {
   return (
     <span
-      className={`whitespace-nowrap text-xl font-extrabold tracking-tight ${className ?? ''}`}
+      className={`whitespace-nowrap text-xl font-bold tracking-tight ${className ?? ''}`}
     >
       <span className="text-bauhaus-blue">Stay</span>
       <span className="text-bauhaus-red">Qualif</span>

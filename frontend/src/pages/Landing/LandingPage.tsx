@@ -100,7 +100,7 @@ export function LandingPage({
 
         <div className="relative z-10 flex max-w-2xl flex-col items-center gap-12 text-center">
           <div className="flex flex-col items-center gap-5">
-            <h1 className="text-4xl font-bold leading-tight md:text-6xl">
+            <h1 className="text-4xl font-extrabold leading-tight md:text-6xl">
               Train with AI.
               <br />
               Get Hired by Humans.
