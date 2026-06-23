@@ -1,5 +1,6 @@
 import type { JSX } from 'react';
 
+import { Checkbox } from '../Checkbox';
 import type { IMilestone } from '../../types/upskilling.types';
 
 /**
@@ -75,13 +76,12 @@ export function MilestoneList({
               key={milestone.id}
               className="flex items-start gap-3 rounded-xl border border-gray-200 bg-canvas p-4"
             >
-              <input
+              <Checkbox
                 id={checkboxId}
-                type="checkbox"
                 checked={milestone.completed}
                 disabled={disabled}
                 onChange={() => onToggle(milestone.id, !milestone.completed)}
-                className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 text-accent-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/45 disabled:opacity-50"
+                className="mt-1"
               />
               <div className="flex min-w-0 flex-col gap-1">
                 <label

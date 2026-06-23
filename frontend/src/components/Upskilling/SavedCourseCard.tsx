@@ -2,7 +2,6 @@ import { useState } from 'react';
 import type { JSX } from 'react';
 
 import { Button } from '../Button';
-import { Panel } from '../Panel';
 import type { CostClassification, ISavedCourse } from '../../types/upskilling.types';
 
 /**
@@ -39,75 +38,73 @@ export function SavedCourseCard({ course, onDelete }: SavedCourseCardProps): JSX
   };
 
   return (
-    <Panel className="border border-gray-150">
-      <div className="flex flex-col gap-3">
-        {/* Header: title + cost badge */}
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="text-base font-semibold text-ink">{course.title}</h3>
-          <span
-            className={[
-              'shrink-0 rounded-full px-3 py-1 text-xs font-medium',
-              COST_BADGE_STYLES[course.cost],
-            ].join(' ')}
-          >
-            {course.cost}
-          </span>
-        </div>
-
-        {/* Provider */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
-          <span className="font-medium text-ink">{course.provider}</span>
-        </div>
-
-        {/* Actions: external link + Delete */}
-        <div className="mt-1 flex items-center gap-2">
-          <Button
-            type="button"
-            onClick={() => window.open(course.url, '_blank', 'noopener,noreferrer')}
-            size="sm"
-          >
-            View course
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className="inline-block h-4 w-4 ml-1"
-              aria-hidden="true"
-            >
-              <path
-                fillRule="evenodd"
-                d="M4.25 5.5a.75.75 0 0 0-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 0 0 .75-.75v-4a.75.75 0 0 1 1.5 0v4A2.25 2.25 0 0 1 12.75 17h-8.5A2.25 2.25 0 0 1 2 14.75v-8.5A2.25 2.25 0 0 1 4.25 4h5a.75.75 0 0 1 0 1.5h-5Zm7.5-3.25a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0V4.06l-6.22 6.22a.75.75 0 1 1-1.06-1.06L15.44 3h-2.69a.75.75 0 0 1-.75-.75Z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </Button>
-
-          <Button
-            type="button"
-            onClick={() => void handleDelete()}
-            disabled={deleting}
-            variant="outline"
-            size="sm"
-            className="text-accent-red hover:bg-accent-red/10 border-accent-red/20 focus-visible:ring-accent-red/40"
-          >
-            <svg
-              className="h-4 w-4 mr-1"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={1.5}
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
-              />
-            </svg>
-            {deleting ? 'Deleting…' : 'Delete'}
-          </Button>
-        </div>
+    <article className="flex h-full flex-col gap-4 rounded-2xl bg-surface p-6 shadow-card">
+      {/* Header: title + cost badge */}
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="text-base font-bold leading-snug text-ink">{course.title}</h3>
+        <span
+          className={[
+            'shrink-0 rounded-full px-3 py-1 text-xs font-semibold',
+            COST_BADGE_STYLES[course.cost],
+          ].join(' ')}
+        >
+          {course.cost}
+        </span>
       </div>
-    </Panel>
+
+      {/* Provider */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
+        <span className="font-medium text-ink">{course.provider}</span>
+      </div>
+
+      {/* Actions: external link + Delete (pinned to the bottom) */}
+      <div className="mt-auto flex items-center gap-2 pt-1">
+        <Button
+          type="button"
+          onClick={() => window.open(course.url, '_blank', 'noopener,noreferrer')}
+          size="sm"
+        >
+          View course
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className="inline-block h-4 w-4 ml-1"
+            aria-hidden="true"
+          >
+            <path
+              fillRule="evenodd"
+              d="M4.25 5.5a.75.75 0 0 0-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 0 0 .75-.75v-4a.75.75 0 0 1 1.5 0v4A2.25 2.25 0 0 1 12.75 17h-8.5A2.25 2.25 0 0 1 2 14.75v-8.5A2.25 2.25 0 0 1 4.25 4h5a.75.75 0 0 1 0 1.5h-5Zm7.5-3.25a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0V4.06l-6.22 6.22a.75.75 0 1 1-1.06-1.06L15.44 3h-2.69a.75.75 0 0 1-.75-.75Z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </Button>
+
+        <Button
+          type="button"
+          onClick={() => void handleDelete()}
+          disabled={deleting}
+          variant="outline"
+          size="sm"
+          className="text-accent-red hover:bg-accent-red/10 hover:text-accent-red border-accent-red/20 focus-visible:ring-accent-red/40"
+        >
+          <svg
+            className="h-4 w-4 mr-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+            />
+          </svg>
+          {deleting ? 'Deleting…' : 'Delete'}
+        </Button>
+      </div>
+    </article>
   );
 }

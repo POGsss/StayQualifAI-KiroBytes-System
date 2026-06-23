@@ -6,6 +6,8 @@ import { SavedCourseCard } from '../../components/Upskilling/SavedCourseCard';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { Panel } from '../../components/Panel';
+import { Select } from '../../components/Select';
+import type { ISelectOption } from '../../components/Select';
 import { useUpskillingStore } from '../../stores/upskilling.store';
 import type {
   CostClassification,
@@ -13,7 +15,12 @@ import type {
 } from '../../types/upskilling.types';
 
 /**
- * CoursesTab — Course & Certificate Finder.
+ * CoursesTab — Course & Certificate Finder (Bauhaus redesign).
+ *
+ * Adopts the Projects tab page structure: a single-row search/filter toolbar
+ * (label-less, placeholders only, action button on the same row), followed by
+ * a responsive grid of recommendation cards and a "Saved courses" grid that
+ * matches "Saved projects" exactly. No KPI cards on this tab.
  *
  * Lets a learner search for course/certificate recommendations by query with
  * an optional Free/Paid cost filter (Req 5.1, 5.3). Results are rendered in the
@@ -27,7 +34,11 @@ import type {
 /** Local cost-filter selection. `'All'` sends no cost filter to the API. */
 type CostFilter = 'All' | CostClassification;
 
-const COST_FILTERS: readonly CostFilter[] = ['All', 'Free', 'Paid'] as const;
+const COST_OPTIONS: ReadonlyArray<ISelectOption> = [
+  { value: 'All', label: 'Any cost' },
+  { value: 'Free', label: 'Free' },
+  { value: 'Paid', label: 'Paid' },
+];
 
 export function CoursesTab(): JSX.Element {
   const searchResults = useUpskillingStore((s) => s.searchResults);
@@ -92,65 +103,44 @@ export function CoursesTab(): JSX.Element {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Search panel */}
-      <Panel title="Search courses &amp; certificates">
-        <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="course-query" className="text-sm font-medium text-muted">
-              Query
-            </label>
-            <Input
-              id="course-query"
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="e.g. React, data analysis, AWS certification"
-              maxLength={100}
-            />
-          </div>
-
-          {/* Cost filter — pills */}
-          <fieldset className="flex flex-col gap-1.5">
-            <legend className="text-sm font-medium text-muted">Cost</legend>
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Cost filter">
-              {COST_FILTERS.map((option) => {
-                const active = costFilter === option;
-                return (
-                  <Button
-                    key={option}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => setCostFilter(option)}
-                    variant={active ? 'primary' : 'outline'}
-                    size="sm"
-                  >
-                    {option}
-                  </Button>
-                );
-              })}
-            </div>
-          </fieldset>
-
-          <div>
-            <Button
-              type="submit"
-              disabled={!canSearch}
-            >
-              {status === 'loading' ? 'Searching…' : 'Search courses'}
-            </Button>
-          </div>
+      {/* Search/filter row — mirrors the Projects + Job Search toolbars */}
+      <Panel aria-label="Search courses and certificates" title="Find Courses">
+        <form
+          className="grid items-center gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto]"
+          onSubmit={handleSubmit}
+        >
+          <Input
+            type="text"
+            value={query}
+            aria-label="Course search query"
+            placeholder="Search courses (e.g. React, AWS certification)"
+            maxLength={100}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <Select
+            value={costFilter}
+            aria-label="Cost filter"
+            options={COST_OPTIONS}
+            onChange={(e) => setCostFilter(e.target.value as CostFilter)}
+          />
+          <Button type="submit" disabled={!canSearch}>
+            {status === 'loading' ? 'Searching…' : 'Search'}
+          </Button>
         </form>
       </Panel>
 
       {/* Dismissible error banner */}
       {error !== null && (
-        <div className="flex items-start justify-between gap-3 rounded-[10px] border border-accent-red/40 bg-accent-red/10 p-4 text-ink">
-          <p className="text-sm">{error.message}</p>
+        <div
+          role="alert"
+          className="flex items-start justify-between gap-3 rounded-2xl bg-accent-red/10 p-4"
+        >
+          <p className="text-sm text-accent-red">{error.message}</p>
           <button
             type="button"
             onClick={clearError}
             aria-label="Dismiss error"
-            className="shrink-0 rounded p-1 text-accent-red hover:bg-accent-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-red/40"
+            className="shrink-0 rounded-md p-1 text-accent-red transition-colors hover:bg-accent-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-red/40"
           >
             <svg
               className="h-4 w-4"
@@ -166,11 +156,14 @@ export function CoursesTab(): JSX.Element {
         </div>
       )}
 
-      {/* Loading state */}
+      {/* Loading state — skeleton grid */}
       {status === 'loading' && (
-        <div className="flex flex-col gap-3" aria-label="Loading courses">
+        <div
+          className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
+          aria-label="Loading courses"
+        >
           {Array.from({ length: 3 }, (_, i) => (
-            <div key={i} className="animate-pulse rounded-2xl bg-surface p-5 shadow-panel border border-gray-150">
+            <div key={i} className="animate-pulse rounded-2xl bg-surface p-6 shadow-card">
               <div className="flex flex-col gap-3">
                 <div className="flex items-start justify-between">
                   <div className="h-5 w-3/5 rounded bg-canvas" />
@@ -178,8 +171,8 @@ export function CoursesTab(): JSX.Element {
                 </div>
                 <div className="h-4 w-32 rounded bg-canvas" />
                 <div className="flex gap-2">
-                  <div className="h-9 w-28 rounded-lg bg-canvas" />
-                  <div className="h-9 w-20 rounded-lg bg-canvas" />
+                  <div className="h-8 w-28 rounded-lg bg-canvas" />
+                  <div className="h-8 w-20 rounded-lg bg-canvas" />
                 </div>
               </div>
             </div>
@@ -189,7 +182,7 @@ export function CoursesTab(): JSX.Element {
 
       {/* Empty state — search returned zero results (Req 5.5) */}
       {showEmptyState && (
-        <Panel className="bg-canvas border border-gray-200 text-center">
+        <Panel aria-label="No courses found" className="text-center">
           <p className="text-sm text-muted">
             No courses matched your search. Try a different topic or cost filter.
           </p>
@@ -199,34 +192,34 @@ export function CoursesTab(): JSX.Element {
       {/* Search results — rendered in API order, NOT re-sorted (Req 5.9) */}
       {status === 'idle' && searchResults.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold text-ink">
-            Recommendations ({searchResults.length})
-          </h2>
-          {searchResults.map((recommendation) => (
-            <CourseCard
-              key={recommendation.url}
-              recommendation={recommendation}
-              onSave={handleSave}
-            />
-          ))}
+          <h2 className="text-lg font-bold text-ink">Recommendations</h2>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {searchResults.map((recommendation) => (
+              <CourseCard
+                key={recommendation.url}
+                recommendation={recommendation}
+                onSave={handleSave}
+              />
+            ))}
+          </div>
         </section>
       )}
 
-      {/* Saved courses */}
+      {/* Saved courses — matches the Saved projects grid exactly */}
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold text-ink">
-          Saved courses ({savedCourses.length})
-        </h2>
-        {savedCourses.length === 0 ? (
-          <Panel className="bg-canvas border border-gray-200 text-center">
+        <h2 className="text-lg font-bold text-ink">Saved courses</h2>
+        {savedCourses.length > 0 ? (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {savedCourses.map((course) => (
+              <SavedCourseCard key={course.id} course={course} onDelete={handleDelete} />
+            ))}
+          </div>
+        ) : (
+          <Panel aria-label="No saved courses" className="text-center">
             <p className="text-sm text-muted">
-              You haven&apos;t saved any courses yet. Bookmark a recommendation to find it here.
+              No saved courses yet. Bookmark a recommendation to find it here.
             </p>
           </Panel>
-        ) : (
-          savedCourses.map((course) => (
-            <SavedCourseCard key={course.id} course={course} onDelete={handleDelete} />
-          ))
         )}
       </section>
     </div>

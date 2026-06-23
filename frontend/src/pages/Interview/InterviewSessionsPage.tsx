@@ -344,11 +344,11 @@ export function InterviewSessionsPage(): JSX.Element {
               return (
                 <li key={session.id}>
                   <div
-                    className={`flex flex-col gap-3 rounded-xl border p-4 shadow-sm transition-colors ${
-                      isSelected
-                        ? 'border-accent-blue/40 bg-accent-blue/5'
-                        : 'border-gray-200 bg-canvas'
-                    }`}
+                    className={[
+                      'flex flex-col gap-3 rounded-2xl p-4 text-left transition-colors',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bauhaus-blue/40',
+                      isSelected ? 'bg-canvas' : 'bg-surface hover:bg-canvas/60',
+                    ].join(' ')}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex min-w-0 flex-col gap-1">
