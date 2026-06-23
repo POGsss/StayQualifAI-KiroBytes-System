@@ -772,25 +772,25 @@ export function ResumeBuilderPage(): JSX.Element {
 
             {/* Bottom Actions: Edit/Preview tabs switch — sits directly below the
                 workspace content with no separating border (mirrors the Scanner's
-                action row). */}
-            {resumeContent !== null ? (
-              <div className="flex justify-end gap-2.5 no-print">
-                <Button
-                  variant={activeTab === 'edit' ? 'primary' : 'outline'}
-                  aria-pressed={activeTab === 'edit'}
-                  onClick={(): void => setActiveTab('edit')}
-                >
-                  Edit
-                </Button>
-                <Button
-                  variant={activeTab === 'preview' ? 'primary' : 'outline'}
-                  aria-pressed={activeTab === 'preview'}
-                  onClick={(): void => setActiveTab('preview')}
-                >
-                  Preview
-                </Button>
-              </div>
-            ) : null}
+                action row). Always visible; disabled until there is content. */}
+            <div className="flex justify-end gap-2.5 no-print">
+              <Button
+                variant={activeTab === 'edit' ? 'primary' : 'outline'}
+                aria-pressed={activeTab === 'edit'}
+                disabled={resumeContent === null}
+                onClick={(): void => setActiveTab('edit')}
+              >
+                Edit
+              </Button>
+              <Button
+                variant={activeTab === 'preview' ? 'primary' : 'outline'}
+                aria-pressed={activeTab === 'preview'}
+                disabled={resumeContent === null}
+                onClick={(): void => setActiveTab('preview')}
+              >
+                Preview
+              </Button>
+            </div>
           </Panel>
         </div>
       </div>
