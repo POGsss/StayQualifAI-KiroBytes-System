@@ -18,12 +18,12 @@
 import type { ButtonHTMLAttributes, JSX, ReactNode } from 'react';
 
 export type ButtonVariant = 'primary' | 'outline' | 'subtle';
-export type ButtonSize = 'md' | 'lg';
+export type ButtonSize = 'sm' | 'md' | 'lg';
 
 export interface IButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Visual emphasis of the button. Defaults to `primary`. */
   variant?: ButtonVariant;
-  /** Padding scale. `md` matches the header CTA, `lg` matches the hero CTAs. */
+  /** Padding scale. `sm` for dense tables/lists, `md` for header CTA, `lg` for hero CTAs. */
   size?: ButtonSize;
   /** Stretch the button to fill its container's inline size. */
   fullWidth?: boolean;
@@ -43,6 +43,7 @@ const BASE_CLASS =
  * `lg` is reserved for the marketing hero CTAs.
  */
 const SIZE_CLASS: Record<ButtonSize, string> = {
+  sm: 'h-8 px-3 text-xs',
   md: 'h-11 px-5',
   lg: 'h-14 px-10',
 };
@@ -74,7 +75,6 @@ export function Button({
     .join(' ');
 
   return (
-    // eslint-disable-next-line react/button-has-type
     <button type={type} className={classes} {...rest}>
       {children}
     </button>

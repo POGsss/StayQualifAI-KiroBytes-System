@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import type { JSX } from 'react';
 
+import { Button } from '../Button';
+import { Panel } from '../Panel';
 import type {
   CostClassification,
   ICourseRecommendation,
@@ -25,8 +27,8 @@ interface CourseCardProps {
 }
 
 const COST_BADGE_STYLES: Record<CostClassification, string> = {
-  Free: 'bg-[#00F5D4]/20 text-emerald-700',
-  Paid: 'bg-[#9b5de5]/15 text-[#7a3fd0]',
+  Free: 'bg-accent-blue/10 text-accent-blue',
+  Paid: 'bg-accent-yellow/20 text-ink',
 };
 
 function formatRating(rating: number): string {
@@ -50,11 +52,11 @@ export function CourseCard({ recommendation, onSave }: CourseCardProps): JSX.Ele
   };
 
   return (
-    <article className="rounded-2xl bg-white p-5 shadow-sm">
+    <Panel className="border border-gray-150">
       <div className="flex flex-col gap-3">
         {/* Header: title + cost badge */}
         <div className="flex items-start justify-between gap-3">
-          <h3 className="text-base font-semibold text-gray-900">{recommendation.title}</h3>
+          <h3 className="text-base font-semibold text-ink">{recommendation.title}</h3>
           <span
             className={[
               'shrink-0 rounded-full px-3 py-1 text-xs font-medium',
@@ -66,15 +68,15 @@ export function CourseCard({ recommendation, onSave }: CourseCardProps): JSX.Ele
         </div>
 
         {/* Provider & rating */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600">
-          <span className="font-medium">{recommendation.provider}</span>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
+          <span className="font-medium text-ink">{recommendation.provider}</span>
           {recommendation.rating !== undefined && (
-            <span className="inline-flex items-center gap-1 text-gray-500">
+            <span className="inline-flex items-center gap-1 text-muted">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 20 20"
                 fill="currentColor"
-                className="h-4 w-4 text-[#FEE440]"
+                className="h-4 w-4 text-accent-yellow"
                 aria-hidden="true"
               >
                 <path
@@ -90,21 +92,17 @@ export function CourseCard({ recommendation, onSave }: CourseCardProps): JSX.Ele
 
         {/* Actions: external link + Save bookmark */}
         <div className="mt-1 flex items-center gap-2">
-          <a
-            href={recommendation.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-lg bg-primary px-4 py-2
-              text-sm font-medium text-white transition-colors hover:bg-primary/90
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50
-              focus-visible:ring-offset-2"
+          <Button
+            type="button"
+            onClick={() => window.open(recommendation.url, '_blank', 'noopener,noreferrer')}
+            size="sm"
           >
             View course
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
               fill="currentColor"
-              className="inline-block h-4 w-4"
+              className="inline-block h-4 w-4 ml-1"
               aria-hidden="true"
             >
               <path
@@ -113,25 +111,20 @@ export function CourseCard({ recommendation, onSave }: CourseCardProps): JSX.Ele
                 clipRule="evenodd"
               />
             </svg>
-          </a>
+          </Button>
 
-          <button
+          <Button
             type="button"
             onClick={() => void handleSave()}
             disabled={saved || saving}
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-medium
-              transition-colors focus-visible:outline-none focus-visible:ring-2
-              focus-visible:ring-primary/50 focus-visible:ring-offset-2
-              ${
-                saved
-                  ? 'cursor-default border-emerald-200 bg-emerald-50 text-emerald-700'
-                  : 'border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50'
-              }`}
+            variant={saved ? 'subtle' : 'outline'}
+            size="sm"
+            className={saved ? 'text-accent-blue bg-accent-blue/10 border-accent-blue/20 hover:bg-accent-blue/15' : ''}
           >
             {saved ? (
               <>
                 <svg
-                  className="h-4 w-4"
+                  className="h-4 w-4 mr-1"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -145,7 +138,7 @@ export function CourseCard({ recommendation, onSave }: CourseCardProps): JSX.Ele
             ) : (
               <>
                 <svg
-                  className="h-4 w-4"
+                  className="h-4 w-4 mr-1"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -161,9 +154,9 @@ export function CourseCard({ recommendation, onSave }: CourseCardProps): JSX.Ele
                 {saving ? 'Saving…' : 'Save'}
               </>
             )}
-          </button>
+          </Button>
         </div>
       </div>
-    </article>
+    </Panel>
   );
 }

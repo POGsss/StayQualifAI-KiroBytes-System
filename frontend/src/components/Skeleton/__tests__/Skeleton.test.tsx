@@ -35,7 +35,7 @@ describe('SkeletonList — loading region ARIA', () => {
 
 describe('SkeletonList — row count', () => {
   it('renders 3 rows when rows={3}', () => {
-    const { container } = render(<SkeletonList label="Loading" rows={3} />);
+    render(<SkeletonList label="Loading" rows={3} />);
     const region = screen.getByRole('status');
     // Each row is a direct child div of the status container
     const rows = within(region).getAllByRole('generic', { hidden: true });

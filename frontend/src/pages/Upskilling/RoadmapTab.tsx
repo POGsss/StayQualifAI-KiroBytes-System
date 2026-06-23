@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { JSX } from 'react';
 
 import { MilestoneList } from '../../components/Upskilling/MilestoneList';
+import { Button } from '../../components/Button';
+import { Input } from '../../components/Input';
+import { Panel } from '../../components/Panel';
 import { useUpskillingStore } from '../../stores/upskilling.store';
 
 /**
@@ -117,14 +120,13 @@ export function RoadmapTab(): JSX.Element {
   return (
     <div className="flex flex-col gap-6">
       {/* Generation form */}
-      <div className="rounded-2xl bg-white p-6 shadow-sm">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">Career Goal Roadmap</h2>
+      <Panel title="Career Goal Roadmap">
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="flex flex-col gap-1">
-            <label htmlFor="roadmap-current-role" className="text-sm font-medium text-gray-700">
+            <label htmlFor="roadmap-current-role" className="text-sm font-medium text-muted">
               Current role
             </label>
-            <input
+            <Input
               id="roadmap-current-role"
               type="text"
               value={currentRole}
@@ -132,14 +134,13 @@ export function RoadmapTab(): JSX.Element {
               disabled={isLoading}
               placeholder="e.g. Frontend Developer"
               maxLength={100}
-              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-50"
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor="roadmap-target-role" className="text-sm font-medium text-gray-700">
+            <label htmlFor="roadmap-target-role" className="text-sm font-medium text-muted">
               Target role
             </label>
-            <input
+            <Input
               id="roadmap-target-role"
               type="text"
               value={targetRole}
@@ -147,14 +148,13 @@ export function RoadmapTab(): JSX.Element {
               disabled={isLoading}
               placeholder="e.g. Senior Backend Engineer"
               maxLength={100}
-              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-50"
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor="roadmap-duration" className="text-sm font-medium text-gray-700">
+            <label htmlFor="roadmap-duration" className="text-sm font-medium text-muted">
               Duration (months)
             </label>
-            <input
+            <Input
               id="roadmap-duration"
               type="number"
               min={1}
@@ -163,34 +163,55 @@ export function RoadmapTab(): JSX.Element {
               value={durationMonths}
               onChange={(e) => setDurationMonths(e.target.value)}
               disabled={isLoading}
-              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-50"
             />
           </div>
         </div>
 
-        <button
+        <Button
           type="button"
           onClick={() => void handleGenerate()}
           disabled={!canGenerate}
-          className="mt-4 inline-flex items-center justify-center gap-2 self-start rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-4 self-start"
         >
-          {isLoading && <Spinner />}
+          {isLoading && (
+            <svg
+              className="h-4 w-4 animate-spin mr-2"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
+            </svg>
+          )}
           {isLoading ? 'Generating…' : 'Generate roadmap'}
-        </button>
-      </div>
+        </Button>
+      </Panel>
 
       {/* Error banner */}
       {error !== null && (
         <div
           role="alert"
-          className="flex items-start justify-between rounded-lg bg-red-50 p-4 text-red-800"
+          className="flex items-start justify-between rounded-[10px] border border-accent-red/40 bg-accent-red/10 p-4 text-ink"
         >
           <p className="text-sm">{error.message}</p>
           <button
             type="button"
             onClick={clearError}
             aria-label="Dismiss error"
-            className="ms-4 shrink-0 rounded p-1 text-red-600 hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
+            className="ms-4 shrink-0 rounded p-1 text-accent-red hover:bg-accent-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-red/40"
           >
             <CloseIcon />
           </button>
@@ -199,48 +220,67 @@ export function RoadmapTab(): JSX.Element {
 
       {/* Generated draft preview + save */}
       {showDraft && generatedRoadmap !== null && (
-        <div className="rounded-2xl bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-center justify-between gap-4">
-            <div>
-              <h3 className="text-base font-semibold text-gray-900">
-                Generated roadmap draft
-              </h3>
-              <p className="text-sm text-gray-600">
-                {generatedRoadmap.currentRole} → {generatedRoadmap.targetRole} ·{' '}
-                {generatedRoadmap.targetDurationMonths} months ·{' '}
-                {generatedRoadmap.milestones.length} milestones
-              </p>
-            </div>
-            <button
+        <Panel
+          title="Generated roadmap draft"
+          actions={
+            <Button
               type="button"
               onClick={() => void handleSave()}
               disabled={isLoading}
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="shrink-0"
             >
-              {isLoading && <Spinner />}
+              {isLoading && (
+                <svg
+                  className="h-4 w-4 animate-spin mr-2"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+              )}
               Save roadmap
-            </button>
-          </div>
+            </Button>
+          }
+        >
+          <p className="mb-4 text-sm text-muted">
+            {generatedRoadmap.currentRole} → {generatedRoadmap.targetRole} ·{' '}
+            {generatedRoadmap.targetDurationMonths} months ·{' '}
+            {generatedRoadmap.milestones.length} milestones
+          </p>
           <ol className="flex flex-col gap-3">
             {generatedRoadmap.milestones.map((milestone) => (
               <li
                 key={milestone.sequence}
-                className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-4"
+                className="flex items-start gap-3 rounded-xl border border-gray-200 bg-canvas p-4"
               >
-                <span className="mt-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-50 px-1.5 text-xs font-semibold text-primary">
+                <span className="mt-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent-blue/10 px-1.5 text-xs font-semibold text-accent-blue">
                   {milestone.sequence}
                 </span>
                 <div className="flex min-w-0 flex-col gap-1">
-                  <p className="text-sm font-semibold text-gray-900">{milestone.title}</p>
-                  <p className="text-sm text-gray-600">{milestone.description}</p>
+                  <p className="text-sm font-semibold text-ink">{milestone.title}</p>
+                  <p className="text-sm text-muted">{milestone.description}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-[#FEE440] px-2 py-0.5 text-xs font-medium text-gray-800">
+                    <span className="rounded-full bg-accent-yellow/20 px-2 py-0.5 text-xs font-medium text-ink">
                       {milestone.estimatedDurationWeeks} wk
                     </span>
                     {milestone.skills.map((skill) => (
                       <span
                         key={skill}
-                        className="rounded-full bg-[#ffc8dd] px-2 py-0.5 text-xs font-medium text-gray-800"
+                        className="rounded-full bg-accent-blue/10 px-2 py-0.5 text-xs font-medium text-accent-blue"
                       >
                         {skill}
                       </span>
@@ -250,16 +290,15 @@ export function RoadmapTab(): JSX.Element {
               </li>
             ))}
           </ol>
-        </div>
+        </Panel>
       )}
 
       {/* Two-column: saved roadmap list + detail */}
-      <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-[3fr_7fr]">
         {/* Saved roadmaps list */}
-        <div className="rounded-2xl bg-white p-6 shadow-sm">
-          <h3 className="mb-4 text-base font-semibold text-gray-900">Saved roadmaps</h3>
+        <Panel title="Saved roadmaps">
           {roadmaps.length === 0 ? (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted">
               No saved roadmaps yet. Generate and save one to get started.
             </p>
           ) : (
@@ -274,19 +313,19 @@ export function RoadmapTab(): JSX.Element {
                       aria-pressed={isSelected}
                       className={[
                         'w-full rounded-xl border p-3 text-left transition-colors',
-                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/40',
                         isSelected
-                          ? 'border-primary bg-primary-50'
-                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50',
+                          ? 'border-accent-blue bg-accent-blue/5'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-canvas',
                       ].join(' ')}
                     >
-                      <p className="truncate text-sm font-semibold text-gray-900">
+                      <p className="truncate text-sm font-semibold text-ink">
                         {roadmap.currentRole} → {roadmap.targetRole}
                       </p>
-                      <p className="mt-1 text-xs text-gray-500">
+                      <p className="mt-1 text-xs text-muted">
                         {roadmap.targetDurationMonths} months
                       </p>
-                      <p className="mt-1 text-xs font-medium text-gray-700">
+                      <p className="mt-1 text-xs font-medium text-ink">
                         {roadmap.completedCount} / {roadmap.totalCount} complete
                       </p>
                     </button>
@@ -295,34 +334,32 @@ export function RoadmapTab(): JSX.Element {
               })}
             </ul>
           )}
-        </div>
+        </Panel>
 
         {/* Selected roadmap detail */}
-        <div className="rounded-2xl bg-white p-6 shadow-sm">
+        <Panel title={currentRoadmap !== null ? `${currentRoadmap.currentRole} → ${currentRoadmap.targetRole}` : undefined}>
           {currentRoadmap === null ? (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted">
               Select a roadmap to view its milestones and track progress.
             </p>
           ) : (
             <div className="flex flex-col gap-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="text-base font-semibold text-gray-900">
-                    {currentRoadmap.currentRole} → {currentRoadmap.targetRole}
-                  </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-muted">
                     {currentRoadmap.targetDurationMonths} months ·{' '}
                     {currentRoadmap.totalCount} milestones
                   </p>
                 </div>
-                <button
+                <Button
                   type="button"
                   onClick={() => handleDelete(currentRoadmap.id)}
                   disabled={isLoading}
-                  className="inline-flex shrink-0 items-center justify-center rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50 disabled:cursor-not-allowed disabled:opacity-50"
+                  variant="outline"
+                  className="shrink-0 text-accent-red hover:bg-accent-red/10 border-accent-red/20 focus-visible:ring-accent-red/40"
                 >
                   Delete
-                </button>
+                </Button>
               </div>
               <MilestoneList
                 milestones={currentRoadmap.milestones}
@@ -333,36 +370,9 @@ export function RoadmapTab(): JSX.Element {
               />
             </div>
           )}
-        </div>
+        </Panel>
       </div>
     </div>
-  );
-}
-
-/** Inline loading spinner shown inside action buttons. */
-function Spinner(): JSX.Element {
-  return (
-    <svg
-      className="h-4 w-4 animate-spin"
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-    >
-      <circle
-        className="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="4"
-      />
-      <path
-        className="opacity-75"
-        fill="currentColor"
-        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-      />
-    </svg>
   );
 }
 

@@ -88,7 +88,7 @@ describe('useSpeechSynthesis', () => {
     expect(result.current.isSpeaking).toBe(true);
     expect(fakeSpeechSynthesis.speak).toHaveBeenCalledTimes(1);
     // The utterance passed to speak() should carry the short text verbatim.
-    expect(utteranceInstances[0].text).toBe('Hello');
+    expect(utteranceInstances[0]!.text).toBe('Hello');
   });
 
   // ── 3. Chunk chaining for long text (Req 4.2) ─────────────────────────────
@@ -115,7 +115,7 @@ describe('useSpeechSynthesis', () => {
 
     // Fire the first utterance's onend to trigger the second chunk.
     act(() => {
-      utteranceInstances[0].onend!();
+      utteranceInstances[0]!.onend!();
     });
 
     // Second chunk should now have been spoken.
@@ -181,7 +181,7 @@ describe('useSpeechSynthesis', () => {
 
     act(() => {
       // Fire the error event on the first utterance.
-      utteranceInstances[0].onerror!({
+      utteranceInstances[0]!.onerror!({
         error: 'synthesis-failed',
       } as SpeechSynthesisErrorEvent);
     });

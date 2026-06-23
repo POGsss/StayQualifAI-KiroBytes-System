@@ -11,24 +11,24 @@ const DEBOUNCE_MS = 1000;
  * Stage badge color mapping for visual differentiation.
  */
 const STAGE_COLORS: Record<Stage, string> = {
-  Wishlist: 'bg-gray-100 text-gray-700',
-  Applied: 'bg-blue-100 text-blue-700',
-  Interviewing: 'bg-yellow-100 text-yellow-700',
-  Offer: 'bg-green-100 text-green-700',
-  Rejected: 'bg-red-100 text-red-700',
+  Wishlist: 'bg-canvas text-muted border border-gray-200',
+  Applied: 'bg-accent-blue/10 text-accent-blue',
+  Interviewing: 'bg-accent-yellow/20 text-ink',
+  Offer: 'bg-accent-blue text-white',
+  Rejected: 'bg-accent-red/10 text-accent-red',
 };
 
 /**
  * Work mode badge color mapping.
  */
 const WORK_MODE_COLORS: Record<string, string> = {
-  Remote: 'bg-emerald-100 text-emerald-700',
-  Hybrid: 'bg-orange-100 text-orange-700',
-  Onsite: 'bg-purple-100 text-purple-700',
+  Remote: 'bg-accent-blue/10 text-accent-blue',
+  Hybrid: 'bg-accent-yellow/20 text-ink',
+  Onsite: 'bg-canvas text-muted border border-gray-200',
 };
 
 /**
- * ApplicationDetailDialog — native `<dialog>` showing full application details.
+ * ApplicationDetailDialog — native `<dialog>` showing full application details (Bauhaus redesign).
  *
  * Controlled by `selectedApplication` in the Zustand store. When non-null, the
  * dialog opens via `.showModal()`. Closing clears `selectedApplication`.
@@ -164,21 +164,21 @@ export function ApplicationDetailDialog(): JSX.Element | null {
     <dialog
       ref={dialogRef}
       onClick={handleDialogClick}
-      className="rounded-2xl bg-white p-0 max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl backdrop:bg-black/50"
+      className="rounded-2xl bg-surface p-0 max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-panel border-none outline-none animate-dialog-pop backdrop:bg-black/50"
     >
       {/* Header */}
-      <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-gray-100 bg-white p-6 pb-4">
+      <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-gray-200 bg-surface p-6 pb-4">
         <div className="min-w-0">
-          <h2 className="text-lg font-semibold text-gray-900 truncate">
+          <h2 className="text-lg font-bold text-ink truncate">
             {listing.title}
           </h2>
-          <p className="mt-1 text-sm text-gray-600">{listing.company}</p>
+          <p className="mt-1 text-sm text-muted">{listing.company}</p>
         </div>
         <button
           type="button"
           onClick={clearSelection}
           aria-label="Close"
-          className="shrink-0 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+          className="shrink-0 rounded-lg p-2 text-muted transition-colors hover:bg-canvas hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/40"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -200,15 +200,15 @@ export function ApplicationDetailDialog(): JSX.Element | null {
       <div className="space-y-6 p-6">
         {/* Listing Details Panel */}
         <section aria-labelledby="listing-details-heading">
-          <h3 id="listing-details-heading" className="text-sm font-semibold text-gray-900 mb-3">
+          <h3 id="listing-details-heading" className="text-sm font-bold text-ink mb-3 uppercase tracking-wider">
             Listing Details
           </h3>
           <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2 text-sm text-gray-700">
-              <span className="font-medium">Location:</span>
-              <span>{listing.location}</span>
+            <div className="flex flex-wrap items-center gap-2 text-sm text-ink">
+              <span className="font-semibold">Location:</span>
+              <span className="text-muted">{listing.location}</span>
               <span
-                className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${WORK_MODE_COLORS[listing.workMode] ?? 'bg-gray-100 text-gray-700'}`}
+                className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${WORK_MODE_COLORS[listing.workMode] ?? 'bg-canvas text-muted border border-gray-200'}`}
               >
                 {listing.workMode}
               </span>
@@ -216,10 +216,10 @@ export function ApplicationDetailDialog(): JSX.Element | null {
 
             {listing.description && (
               <details className="group">
-                <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900">
+                <summary className="cursor-pointer text-sm font-semibold text-ink hover:text-accent-blue select-none">
                   Description
                 </summary>
-                <p className="mt-2 max-h-40 overflow-y-auto text-sm text-gray-600 whitespace-pre-wrap">
+                <p className="mt-2 max-h-40 overflow-y-auto text-sm text-muted whitespace-pre-wrap bg-canvas p-3 rounded-xl border border-gray-200">
                   {listing.description}
                 </p>
               </details>
@@ -227,12 +227,12 @@ export function ApplicationDetailDialog(): JSX.Element | null {
 
             {listing.sourceUrls.length > 0 && (
               <div className="text-sm">
-                <span className="font-medium text-gray-700">Source: </span>
+                <span className="font-semibold text-ink">Source: </span>
                 <a
                   href={listing.sourceUrls[0]}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary underline hover:text-primary/80"
+                  className="text-accent-blue underline hover:text-accent-blue/80"
                 >
                   View original listing
                 </a>
@@ -243,19 +243,19 @@ export function ApplicationDetailDialog(): JSX.Element | null {
 
         {/* Application Metadata */}
         <section aria-labelledby="app-metadata-heading">
-          <h3 id="app-metadata-heading" className="text-sm font-semibold text-gray-900 mb-3">
+          <h3 id="app-metadata-heading" className="text-sm font-bold text-ink mb-3 uppercase tracking-wider">
             Application Info
           </h3>
           <div className="flex flex-wrap items-center gap-3 text-sm">
             <span
-              className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${STAGE_COLORS[application.stage]}`}
+              className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${STAGE_COLORS[application.stage]}`}
             >
               {application.stage}
             </span>
-            <span className="text-gray-500">
+            <span className="text-muted">
               Added {formatDate(application.dateAdded)}
             </span>
-            <span className="text-gray-500">
+            <span className="text-muted">
               Stage changed {formatDate(application.dateStageChanged)}
             </span>
           </div>
@@ -266,7 +266,7 @@ export function ApplicationDetailDialog(): JSX.Element | null {
           <label
             id="notes-heading"
             htmlFor="application-notes"
-            className="block text-sm font-semibold text-gray-900 mb-2"
+            className="block text-sm font-bold text-ink mb-2 uppercase tracking-wider"
           >
             Notes
           </label>
@@ -276,20 +276,20 @@ export function ApplicationDetailDialog(): JSX.Element | null {
             onChange={handleNotesChange}
             maxLength={NOTES_MAX_LENGTH}
             placeholder="Add notes about this application…"
-            className="w-full rounded-lg border border-gray-300 p-3 text-sm resize-none min-h-[120px] transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="w-full rounded-[10px] border border-gray-200 bg-canvas p-3 text-sm text-ink resize-none min-h-[120px] transition-colors focus:outline-none focus:ring-2 focus:ring-accent-blue/40"
           />
           <div className="mt-1 flex items-center justify-between">
             {saveError && (
-              <p className="text-xs text-red-600">
+              <p className="text-xs text-accent-red font-semibold">
                 Failed to save notes. Your changes are preserved locally.
               </p>
             )}
             {status === 'loading' && !saveError && (
-              <p className="text-xs text-gray-400">Saving…</p>
+              <p className="text-xs text-muted">Saving…</p>
             )}
             {!saveError && status !== 'loading' && <span />}
             <p
-              className={`text-xs ${isAtLimit ? 'text-red-500 font-medium' : 'text-gray-400'}`}
+              className={`text-xs ${isAtLimit ? 'text-accent-red font-semibold' : 'text-muted'}`}
             >
               {characterCount}/{NOTES_MAX_LENGTH}
             </p>
@@ -299,21 +299,21 @@ export function ApplicationDetailDialog(): JSX.Element | null {
         {/* Stage History Timeline */}
         {sortedHistory.length > 0 && (
           <section aria-labelledby="stage-history-heading">
-            <h3 id="stage-history-heading" className="text-sm font-semibold text-gray-900 mb-3">
+            <h3 id="stage-history-heading" className="text-sm font-bold text-ink mb-3 uppercase tracking-wider">
               Stage History
             </h3>
-            <ul className="space-y-2">
+            <ul className="space-y-2 bg-canvas p-4 rounded-xl border border-gray-200">
               {sortedHistory.map((entry, index) => (
                 <li
                   key={`${entry.stage}-${entry.changedAt}-${index}`}
-                  className="flex items-center gap-3 text-sm text-gray-600"
+                  className="flex items-center gap-3 text-sm text-muted"
                 >
                   <span
-                    className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${STAGE_COLORS[entry.stage]}`}
+                    className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${STAGE_COLORS[entry.stage]}`}
                   >
                     {entry.stage}
                   </span>
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-muted">
                     {formatDateTime(entry.changedAt)}
                   </span>
                 </li>
@@ -323,11 +323,11 @@ export function ApplicationDetailDialog(): JSX.Element | null {
         )}
 
         {/* Delete Section */}
-        <section className="border-t border-gray-100 pt-4">
+        <section className="border-t border-gray-200 pt-4">
           <button
             type="button"
             onClick={handleDelete}
-            className="rounded-lg bg-red-600 text-white px-4 py-2 text-sm font-medium transition-colors hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50 focus-visible:ring-offset-2"
+            className="inline-flex items-center justify-center rounded-[10px] text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-red/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 h-11 px-5 border-2 border-accent-red text-accent-red hover:bg-accent-red hover:text-white"
           >
             Delete Application
           </button>

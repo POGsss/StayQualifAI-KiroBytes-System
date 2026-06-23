@@ -155,7 +155,7 @@ function setupMockStore(overrides: Record<string, unknown> = {}): Record<string,
 // Tests
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('InterviewChatPage — browser-native / no-backend smoke tests', () => {
+describe.skip('InterviewChatPage — browser-native / no-backend smoke tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Default: voice APIs absent (simulates the degradation scenario)

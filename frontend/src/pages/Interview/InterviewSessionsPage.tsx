@@ -4,6 +4,8 @@ import type { JSX } from 'react';
 import { ScoreDial } from '../../components/ScoreDial';
 import { Skeleton, SkeletonCard } from '../../components/Skeleton';
 import { TierBadge } from '../../components/TierBadge';
+import { Button } from '../../components/Button';
+import { Panel } from '../../components/Panel';
 import { useInterviewStore } from '../../stores/interview.store';
 import type {
   IInterviewSessionSummary,
@@ -11,7 +13,7 @@ import type {
 } from '../../types/interview.types';
 
 /**
- * InterviewSessionsPage — unified Sessions tab.
+ * InterviewSessionsPage — unified Sessions tab (Bauhaus redesign).
  *
  * This single view replaces the previous separate "Sessions" and "Scorecard"
  * tabs. It lists every interview session newest-first; selecting a row reveals
@@ -72,7 +74,7 @@ function SessionPreview(): JSX.Element {
 
   if (activeSession === null) {
     return (
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-muted">
         Select a session above to preview its details.
       </p>
     );
@@ -82,24 +84,24 @@ function SessionPreview(): JSX.Element {
     activeSession.state === 'COMPLETED' || activeSession.state === 'SCORED';
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 pt-4">
       {/* Session meta */}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-        <span className="text-gray-600">
-          Tier{' '}
-          <span className="font-medium text-[#1a1a1a]">{activeSession.difficultyTier}</span>
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted">
+        <span>
+          Tier:{' '}
+          <span className="font-semibold text-ink">{activeSession.difficultyTier}</span>
         </span>
-        <span className="text-gray-600">
-          State{' '}
-          <span className="font-medium text-[#1a1a1a]">{activeSession.state}</span>
+        <span>
+          State:{' '}
+          <span className="font-semibold text-ink">{activeSession.state}</span>
         </span>
-        <span className="text-gray-600">
-          Questions{' '}
-          <span className="font-medium text-[#1a1a1a]">{activeSession.questionCount}</span>
+        <span>
+          Questions:{' '}
+          <span className="font-semibold text-ink">{activeSession.questionCount}</span>
         </span>
-        <span className="text-gray-600">
-          Created{' '}
-          <span className="font-medium text-[#1a1a1a]">
+        <span>
+          Created:{' '}
+          <span className="font-semibold text-ink">
             {formatTimestamp(activeSession.createdAt)}
           </span>
         </span>
@@ -107,11 +109,11 @@ function SessionPreview(): JSX.Element {
 
       {/* Job description preview */}
       {activeSession.jobDescription.length > 0 && (
-        <details className="rounded-xl border border-gray-100 bg-[#f7f7f8] px-4 py-3">
-          <summary className="cursor-pointer text-sm font-medium text-[#1a1a1a]">
+        <details className="rounded-xl border border-gray-200 bg-canvas px-4 py-3">
+          <summary className="cursor-pointer text-sm font-semibold text-ink select-none">
             Job description
           </summary>
-          <p className="mt-2 whitespace-pre-wrap text-sm text-gray-600">
+          <p className="mt-2 whitespace-pre-wrap text-sm text-muted">
             {activeSession.jobDescription}
           </p>
         </details>
@@ -126,9 +128,9 @@ function SessionPreview(): JSX.Element {
 
       {/* Scorecard, when available */}
       {visibleScorecard !== null && (
-        <div className="flex flex-col gap-6 rounded-xl border border-gray-100 p-5">
+        <div className="flex flex-col gap-6 rounded-xl border border-gray-200 bg-canvas p-5">
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-semibold text-[#1a1a1a]">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-ink">
               Performance Scorecard
             </h3>
             <TierBadge tier={visibleScorecard.passFailTier} />
@@ -140,8 +142,8 @@ function SessionPreview(): JSX.Element {
               </li>
             ))}
           </ul>
-          <div className="flex flex-col items-center gap-2 border-t border-gray-100 pt-4">
-            <p className="text-sm font-medium text-gray-500">Overall Score</p>
+          <div className="flex flex-col items-center gap-2 border-t border-gray-200 pt-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted">Overall Score</p>
             <ScoreDial score={visibleScorecard.overallScore} label="Overall" />
           </div>
         </div>
@@ -151,15 +153,14 @@ function SessionPreview(): JSX.Element {
       {visibleScorecard === null && !isLoading && !isComputing && (
         <div className="flex flex-col items-start gap-2">
           {isScorable ? (
-            <button
-              type="button"
+            <Button
+              variant="primary"
               onClick={() => { void handleCompute(); }}
-              className="rounded-lg bg-[#9b5de5] px-4 py-2 text-sm font-medium text-white hover:bg-[#8a4fd4] focus:outline-none focus:ring-2 focus:ring-[#9b5de5]/50"
             >
               Generate scorecard
-            </button>
+            </Button>
           ) : (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted">
               This session isn&apos;t finished yet — complete it in the Simulator
               to generate a scorecard.
             </p>
@@ -202,7 +203,11 @@ export function InterviewSessionsPage(): JSX.Element {
 
   const handleSelect = useCallback(
     (sessionId: string): void => {
-      if (sessionId === selectedId) return;
+      if (sessionId === selectedId) {
+        // Toggle close by resetting activeSession to null
+        useInterviewStore.setState({ activeSession: null });
+        return;
+      }
       void openSession(sessionId);
     },
     [openSession, selectedId],
@@ -219,115 +224,121 @@ export function InterviewSessionsPage(): JSX.Element {
   );
 
   return (
-    <div className="min-h-full bg-[#f7f7f8] px-6 py-8">
-      <div className="mx-auto flex max-w-5xl flex-col gap-6">
-        <header>
-          <h1 className="text-2xl font-semibold text-[#1a1a1a]">Interview Sessions</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Every session you&apos;ve run. Select one to preview its details and
-            performance scorecard.
-          </p>
-        </header>
+    <Panel
+      aria-label="Interview Sessions"
+      title="Interview Sessions"
+    >
+      <p className="mb-6 text-sm text-muted">
+        Every session you&apos;ve run. Select one to preview its details and
+        performance scorecard.
+      </p>
 
-        {error !== null && (
-          <div
-            role="alert"
-            className="rounded-2xl border border-[#ffc8dd] bg-[#ffc8dd]/30 px-4 py-3 text-sm text-[#1a1a1a]"
-          >
-            {error.message}
-          </div>
-        )}
+      {error !== null && (
+        <div
+          role="alert"
+          className="mb-4 rounded-2xl border border-accent-red/40 bg-accent-red/10 px-4 py-3 text-sm text-ink"
+        >
+          {error.message}
+        </div>
+      )}
 
-        {/* List */}
-        <div className="rounded-2xl bg-white p-6 shadow-sm">
-          {isLoading && orderedSessions.length === 0 ? (
-            <div role="status" aria-busy="true" aria-label="Loading interview sessions">
-              <p className="mb-4 text-sm text-gray-500">Loading interview sessions…</p>
-              <div className="flex flex-col gap-3">
-                {Array.from({ length: 4 }, (_, i) => (
-                  <div key={i} aria-hidden="true" className="flex items-center gap-4">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-4 w-16" />
-                    <Skeleton className="h-4 w-36" />
-                    <Skeleton className="ml-auto h-8 w-24 rounded-md" />
-                  </div>
-                ))}
+      {/* List */}
+      {isLoading && orderedSessions.length === 0 ? (
+        <div role="status" aria-busy="true" aria-label="Loading interview sessions" className="flex flex-col gap-4">
+          <p className="text-sm text-muted">Loading interview sessions…</p>
+          <div className="flex flex-col gap-3">
+            {Array.from({ length: 4 }, (_, i) => (
+              <div key={i} aria-hidden="true" className="flex items-center gap-4 animate-pulse">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="ml-auto h-8 w-24 rounded-md" />
               </div>
-            </div>
-          ) : orderedSessions.length === 0 ? (
-            <div role="status" className="py-8 text-center">
-              <p className="text-sm text-gray-500">
-                No interview sessions yet. Start one in the Simulator to see it here.
-              </p>
-            </div>
-          ) : (
-            <ul className="flex flex-col divide-y divide-gray-100">
+            ))}
+          </div>
+        </div>
+      ) : orderedSessions.length === 0 ? (
+        <div role="status" className="py-8 text-center bg-canvas rounded-xl">
+          <p className="text-sm text-muted">
+            No interview sessions yet. Start one in the Simulator to see it here.
+          </p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-left text-sm text-ink">
+            <thead>
+              <tr className="border-b border-gray-200 text-xs font-bold uppercase tracking-wider text-muted">
+                <th scope="col" className="pb-3 pr-4">Difficulty</th>
+                <th scope="col" className="pb-3 px-4">State</th>
+                <th scope="col" className="pb-3 px-4">Date Created</th>
+                <th scope="col" className="pb-3 px-4 text-center">Score</th>
+                <th scope="col" className="pb-3 px-4 text-center">Result</th>
+                <th scope="col" className="pb-3 pl-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
               {orderedSessions.map((session) => {
                 const isSelected = session.id === selectedId;
                 return (
-                  <li key={session.id}>
-                    <div
-                      className={`flex items-center gap-1 transition-colors ${
-                        isSelected ? 'bg-[#9b5de5]/5' : 'hover:bg-gray-50'
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => handleSelect(session.id)}
-                        aria-expanded={isSelected}
-                        className="flex flex-1 items-center gap-4 px-2 py-3 text-left focus:outline-none focus:ring-2 focus:ring-[#9b5de5]/40"
-                      >
-                        <span
-                          aria-hidden="true"
-                          className={`text-gray-400 transition-transform ${isSelected ? 'rotate-90' : ''}`}
+                  <tr
+                    key={session.id}
+                    role="row"
+                    className={`transition-colors hover:bg-canvas/50 ${
+                      isSelected ? 'bg-accent-blue/5' : ''
+                    }`}
+                  >
+                    <td role="cell" className="py-4 pr-4 font-semibold">{session.difficultyTier}</td>
+                    <td role="cell" className="py-4 px-4 font-medium">{session.state}</td>
+                    <td role="cell" className="py-4 px-4 text-muted">
+                      {formatTimestamp(session.createdAt)}
+                    </td>
+                    <td role="cell" className="py-4 px-4 text-center font-bold text-accent-blue">
+                      {session.overallScore !== null ? session.overallScore : '—'}
+                    </td>
+                    <td role="cell" className="py-4 px-4 text-center">
+                      {session.passFailTier !== null ? (
+                        <TierBadge tier={session.passFailTier} />
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td role="cell" className="py-4 pl-4 text-right">
+                      <div className="inline-flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant={isSelected ? 'primary' : 'outline'}
+                          onClick={() => handleSelect(session.id)}
+                          aria-label={`View detail of ${session.difficultyTier} session`}
                         >
-                          ▶
-                        </span>
-                        <span className="w-28 text-sm font-medium text-[#1a1a1a]">
-                          {session.difficultyTier}
-                        </span>
-                        <span className="w-28 text-sm text-gray-600">{session.state}</span>
-                        <span className="flex-1 text-sm text-gray-500">
-                          {formatTimestamp(session.createdAt)}
-                        </span>
-                        <span className="flex items-center gap-2">
-                          {session.overallScore !== null && (
-                            <span className="text-sm font-semibold text-[#9b5de5]">
-                              {session.overallScore}
-                            </span>
-                          )}
-                          {session.passFailTier !== null ? (
-                            <TierBadge tier={session.passFailTier} />
-                          ) : (
-                            <span className="text-sm text-gray-400">—</span>
-                          )}
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(session.id)}
-                        disabled={pendingDeleteId === session.id}
-                        aria-label={`Delete the ${session.difficultyTier} session created ${formatTimestamp(session.createdAt)}`}
-                        className="mr-2 shrink-0 rounded-lg border border-transparent px-2.5 py-1.5 text-sm font-medium text-red-600 hover:border-red-200 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400/40 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {pendingDeleteId === session.id ? 'Deleting…' : 'Delete'}
-                      </button>
-                    </div>
-
-                    {/* Inline preview for the selected session */}
-                    {isSelected && (
-                      <div className="border-t border-gray-100 bg-white px-2 py-5">
-                        <SessionPreview />
+                          View detail
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="subtle"
+                          onClick={() => handleDelete(session.id)}
+                          disabled={pendingDeleteId === session.id}
+                          aria-label={`Delete the ${session.difficultyTier} session created ${formatTimestamp(session.createdAt)}`}
+                          className="text-accent-red hover:bg-accent-red/10 border-none"
+                        >
+                          {pendingDeleteId === session.id ? 'Deleting…' : 'Delete'}
+                        </Button>
                       </div>
-                    )}
-                  </li>
+                    </td>
+                  </tr>
                 );
               })}
-            </ul>
-          )}
+            </tbody>
+          </table>
         </div>
-      </div>
-    </div>
+      )}
+
+      {/* Render active preview panel outside the table but below it for clean layout */}
+      {selectedId !== null && (
+        <div className="mt-6 border-t border-gray-200 bg-canvas p-6 rounded-2xl shadow-inner">
+          <SessionPreview />
+        </div>
+      )}
+    </Panel>
   );
 }
+

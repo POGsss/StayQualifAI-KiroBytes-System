@@ -32,11 +32,11 @@ interface ITierStyle {
 
 const TIER_STYLES: Readonly<Record<PassFailTier, ITierStyle>> = {
   PASS: {
-    pillClass: 'bg-accent-green text-ink',
+    pillClass: 'bg-accent-blue/10 text-accent-blue',
     srText: 'Result: pass',
   },
   FAIL: {
-    pillClass: 'bg-accent-pink text-ink',
+    pillClass: 'bg-accent-red/10 text-accent-red',
     srText: 'Result: fail',
   },
 };

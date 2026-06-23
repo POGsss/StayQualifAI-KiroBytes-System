@@ -149,8 +149,8 @@ describe('InterviewSessionsPage — newest-first ordering (Req 13.2)', () => {
   it('renders the most recently created session first', () => {
     // Provide sessions in reverse order (older first) to verify sorting
     const reversedSessions: IInterviewSessionSummary[] = [
-      mockSessions[1], // older: 2024-01-01
-      mockSessions[0], // newer: 2024-01-02
+      mockSessions[1]!, // older: 2024-01-01
+      mockSessions[0]!, // newer: 2024-01-02
     ];
     setupMockStore({ sessions: reversedSessions, isLoading: false, error: null });
     render(<InterviewSessionsPage />);
@@ -158,22 +158,22 @@ describe('InterviewSessionsPage — newest-first ordering (Req 13.2)', () => {
     // Get all table rows (excluding header)
     const rows = screen.getAllByRole('row');
     // rows[0] is the header; rows[1] is the first data row
-    const firstDataRow = rows[1];
+    const firstDataRow = rows[1]!;
     // The first data row should contain the MID tier (newer session)
     expect(firstDataRow.textContent).toContain('MID');
   });
 
   it('renders the older session after the newer one', () => {
     const reversedSessions: IInterviewSessionSummary[] = [
-      mockSessions[1], // older
-      mockSessions[0], // newer
+      mockSessions[1]!, // older
+      mockSessions[0]!, // newer
     ];
     setupMockStore({ sessions: reversedSessions, isLoading: false, error: null });
     render(<InterviewSessionsPage />);
 
     const rows = screen.getAllByRole('row');
     // rows[2] is the second data row — should contain ENTRY (older session)
-    const secondDataRow = rows[2];
+    const secondDataRow = rows[2]!;
     expect(secondDataRow.textContent).toContain('ENTRY');
   });
 });

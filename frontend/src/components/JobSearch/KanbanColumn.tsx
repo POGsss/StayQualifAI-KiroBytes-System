@@ -64,16 +64,16 @@ export function KanbanColumn({
       onDrop={handleDrop}
       aria-label={`${stage} column, ${applications.length} applications`}
       className={[
-        'flex flex-col gap-3 rounded-xl p-4 min-h-[400px] flex-1 transition-colors',
+        'flex flex-col gap-3 rounded-2xl p-4 min-h-[400px] flex-1 border transition-colors',
         isDragOver
-          ? 'bg-primary/5 border-2 border-primary/30 border-dashed'
-          : 'bg-gray-50 border-2 border-transparent',
+          ? 'bg-accent-blue/5 border-accent-blue/30 border-dashed border-2'
+          : 'bg-canvas border-gray-200/60 shadow-sm',
       ].join(' ')}
     >
       {/* Column header */}
-      <div className="text-sm font-semibold text-gray-700 flex items-center justify-between">
+      <div className="text-sm font-bold text-ink flex items-center justify-between">
         <span>{stage}</span>
-        <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-xs font-medium">
+        <span className="rounded-full bg-accent-blue/10 text-accent-blue px-2.5 py-0.5 text-xs font-semibold">
           {applications.length}
         </span>
       </div>

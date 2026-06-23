@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { FormEvent, JSX } from 'react';
 
+import { Button } from '../../components/Button';
+import { Input } from '../../components/Input';
+import { Panel } from '../../components/Panel';
 import { SkeletonList } from '../../components/Skeleton';
 import { useInterviewStore } from '../../stores/interview.store';
 import type {
@@ -10,7 +13,7 @@ import type {
 } from '../../types/interview.types';
 
 /**
- * StarOrganizerPage — the STAR Story Organizer tab of the Interview module.
+ * StarOrganizerPage — the STAR Story Organizer tab of the Interview module (Bauhaus redesign).
  *
  * A STAR-framework scratchpad where the authenticated user composes, lists,
  * views, edits, and deletes structured stories (Situation, Task, Action,
@@ -18,15 +21,9 @@ import type {
  * (`useInterviewStore`); this page never calls the service or the Supabase
  * client directly.
  *
- * Layout: two clearly separated white panels on a `#f7f7f8` canvas —
- *   Section 1 "Create Story" — the STAR form (title + four STAR fields + submit)
- *   Section 2 "My Stories" — list of saved stories with skeleton/error/empty states
- *
- * Loading: `SkeletonList` (`role="status"`) while `isLoading` is true in the
- * stories section; replaced by content on success or the store's error on
- * failure (prior stories preserved); explicit "no stories yet" empty state.
- *
- * Validates: Requirements 13.1, 13.4, 13.5, 13.6, 14.3, 14.4, 14.5
+ * Layout: two-column responsive grid matching other Bauhaus modules:
+ *   Left (2/5): Create form wrapped in a Panel card.
+ *   Right (3/5): List of saved stories wrapped in a Panel card.
  */
 
 const TITLE_MAX = 200;
@@ -80,6 +77,11 @@ function formatTimestamp(iso: string): string {
   }
   return date.toLocaleString();
 }
+
+const TEXTAREA_CLASS =
+  'w-full rounded-[10px] border border-gray-200 bg-canvas px-4 py-2.5 text-sm text-ink ' +
+  'placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 ' +
+  'focus-visible:ring-bauhaus-blue/40 disabled:cursor-not-allowed disabled:opacity-50';
 
 export function StarOrganizerPage(): JSX.Element {
   const stories = useInterviewStore((state) => state.stories);
@@ -166,8 +168,6 @@ export function StarOrganizerPage(): JSX.Element {
       if (editId === null || !fieldsAreValid(editFields) || isLoading) {
         return;
       }
-      // Send all current field values; the backend mutates only supplied
-      // fields, so a full payload preserves unchanged content (Req 9.1).
       const input: IUpdateStarInput = {
         title: editFields.title.trim(),
         situation: editFields.situation.trim(),
@@ -197,253 +197,223 @@ export function StarOrganizerPage(): JSX.Element {
   );
 
   return (
-    <div className="min-h-full bg-[#f7f7f8] px-6 py-8">
-      <div className="mx-auto flex max-w-4xl flex-col gap-8">
-
-        {/* ── Page heading (h1) ── */}
-        <header>
-          <h1 className="text-2xl font-semibold text-gray-900">
-            STAR Story Organizer
-          </h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Compose and save structured stories using the Situation, Task, Action,
-            Result framework, then reference them during interview preparation.
-          </p>
-        </header>
-
-        {/* ── Section 1: Create Story ── */}
-        <section
-          aria-labelledby="create-story-heading"
-          className="rounded-2xl bg-white p-6 shadow-sm"
+    <div className="grid gap-6 lg:grid-cols-[2fr_3fr] items-start">
+      {/* Column 1: Create Story */}
+      <Panel
+        aria-label="New STAR story"
+        title="New STAR story"
+      >
+        <form
+          onSubmit={(event): void => {
+            void handleCreate(event);
+          }}
+          aria-label="Create STAR story"
+          className="flex flex-col gap-4"
         >
-          <h2
-            id="create-story-heading"
-            className="mb-5 text-lg font-semibold text-gray-900"
-          >
-            New STAR story
-          </h2>
+          {/* Title field */}
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="create-title"
+              className="text-sm font-semibold text-muted"
+            >
+              Title
+            </label>
+            <Input
+              id="create-title"
+              type="text"
+              maxLength={TITLE_MAX}
+              value={createFields.title}
+              onChange={(event): void =>
+                setCreateFields((prev) => ({
+                  ...prev,
+                  title: event.target.value,
+                }))
+              }
+              disabled={isLoading}
+              aria-describedby="create-title-hint"
+            />
+            <span id="create-title-hint" className="text-xs text-muted">
+              {createFields.title.trim().length}/{TITLE_MAX} characters
+            </span>
+          </div>
 
-          <form
-            onSubmit={(event): void => {
-              void handleCreate(event);
-            }}
-            aria-label="Create STAR story"
-            className="flex flex-col gap-5"
-          >
-            {/* Title field */}
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="create-title"
-                className="text-sm font-medium text-gray-800"
-              >
-                Title
-              </label>
-              <input
-                id="create-title"
-                type="text"
-                maxLength={TITLE_MAX}
-                value={createFields.title}
-                onChange={(event): void =>
-                  setCreateFields((prev) => ({
-                    ...prev,
-                    title: event.target.value,
-                  }))
-                }
-                disabled={isLoading}
-                aria-describedby="create-title-hint"
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
-              />
-              <span id="create-title-hint" className="text-xs text-gray-500">
-                {createFields.title.trim().length}/{TITLE_MAX} characters
-              </span>
-            </div>
+          {/* S / T / A / R textareas */}
+          {STAR_TEXTAREAS.map(({ key, label }) => {
+            const fieldId = `create-${key}`;
+            const hintId = `${fieldId}-hint`;
+            return (
+              <div key={key} className="flex flex-col gap-1.5">
+                <label
+                  htmlFor={fieldId}
+                  className="text-sm font-semibold text-muted"
+                >
+                  {label}
+                </label>
+                <textarea
+                  id={fieldId}
+                  rows={3}
+                  maxLength={STAR_FIELD_MAX}
+                  value={createFields[key]}
+                  onChange={(event): void =>
+                    setCreateFields((prev) => ({
+                      ...prev,
+                      [key]: event.target.value,
+                    }))
+                  }
+                  disabled={isLoading}
+                  aria-describedby={hintId}
+                  className={TEXTAREA_CLASS}
+                />
+                <span id={hintId} className="text-xs text-muted">
+                  {createFields[key].trim().length}/{STAR_FIELD_MAX} characters
+                </span>
+              </div>
+            );
+          })}
 
-            {/* S / T / A / R textareas */}
-            {STAR_TEXTAREAS.map(({ key, label }) => {
-              const fieldId = `create-${key}`;
-              const hintId = `${fieldId}-hint`;
+          <Button
+            type="submit"
+            disabled={!canCreate}
+            className="self-start"
+          >
+            {isLoading ? 'Working…' : 'Save story'}
+          </Button>
+        </form>
+      </Panel>
+
+      {/* Column 2: My Stories */}
+      <Panel
+        aria-label="Your stories"
+        title="Your stories"
+      >
+        {/* Error — role="alert", preserves prior stories below */}
+        {error !== null ? (
+          <p
+            role="alert"
+            className="mb-4 rounded-2xl border border-accent-red/40 bg-accent-red/10 px-4 py-3 text-sm text-ink"
+          >
+            {error.message}
+          </p>
+        ) : null}
+
+        {/* Loading skeleton — shown while isLoading is true */}
+        {isLoading ? (
+          <SkeletonList
+            rows={3}
+            label="Loading your STAR stories"
+          />
+        ) : null}
+
+        {/* Empty state — only when not loading and no stories */}
+        {!isLoading && orderedStories.length === 0 ? (
+          <p
+            role="status"
+            className="rounded-xl bg-canvas px-4 py-6 text-center text-sm text-muted"
+          >
+            No STAR stories yet. Use the form above to create your first STAR story.
+          </p>
+        ) : null}
+
+        {/* Stories list — rendered whenever stories exist */}
+        {orderedStories.length > 0 ? (
+          <ul className="flex flex-col gap-4">
+            {orderedStories.map((story) => {
+              const isSelected = story.id === selectedId;
               return (
-                <div key={key} className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor={fieldId}
-                    className="text-sm font-medium text-gray-800"
-                  >
-                    {label}
-                  </label>
-                  <textarea
-                    id={fieldId}
-                    rows={3}
-                    maxLength={STAR_FIELD_MAX}
-                    value={createFields[key]}
-                    onChange={(event): void =>
-                      setCreateFields((prev) => ({
-                        ...prev,
-                        [key]: event.target.value,
-                      }))
-                    }
-                    disabled={isLoading}
-                    aria-describedby={hintId}
-                    className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
-                  />
-                  <span id={hintId} className="text-xs text-gray-500">
-                    {createFields[key].trim().length}/{STAR_FIELD_MAX} characters
-                  </span>
-                </div>
+                <li
+                  key={story.id}
+                  className={`rounded-xl border p-5 shadow-sm transition-colors ${
+                    isSelected
+                      ? 'border-accent-blue/40 bg-accent-blue/5'
+                      : 'border-gray-200 bg-canvas'
+                  }`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-col gap-1 min-w-0 flex-1">
+                      <p className="font-bold text-ink truncate">{story.title}</p>
+                      <p className="text-xs text-muted">
+                        Created {formatTimestamp(story.createdAt)}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant={isSelected ? 'primary' : 'outline'}
+                        onClick={(): void =>
+                          setSelectedId((current) =>
+                            current === story.id ? null : story.id,
+                          )
+                        }
+                        aria-expanded={isSelected}
+                      >
+                        {isSelected ? 'Hide' : 'View'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="subtle"
+                        onClick={(): void => beginEdit(story)}
+                        disabled={isLoading}
+                      >
+                        Edit
+                      </Button>
+                      {pendingDeleteId === story.id ? (
+                        <span className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-accent-red">Delete?</span>
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            onClick={(): void => {
+                              void handleDelete(story.id);
+                            }}
+                            disabled={isLoading}
+                            className="bg-accent-red text-white hover:bg-accent-red/90"
+                          >
+                            Confirm
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="subtle"
+                            onClick={(): void => setPendingDeleteId(null)}
+                            disabled={isLoading}
+                          >
+                            Cancel
+                          </Button>
+                        </span>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="subtle"
+                          onClick={(): void => setPendingDeleteId(story.id)}
+                          disabled={isLoading}
+                          aria-label={`Delete story ${story.title}`}
+                          className="text-accent-red hover:bg-accent-red/10 border-none"
+                        >
+                          Delete
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Inline edit form (Req 9.1) */}
+                  {editId === story.id ? (
+                    <StarEditForm
+                      fields={editFields}
+                      onChange={setEditFields}
+                      onSubmit={handleSaveEdit}
+                      onCancel={cancelEdit}
+                      canSave={canSaveEdit}
+                      isLoading={isLoading}
+                    />
+                  ) : isSelected ? (
+                    /* Read-only detail view (Req 8.2) */
+                    <StarDetail story={story} />
+                  ) : null}
+                </li>
               );
             })}
-
-            <button
-              type="submit"
-              disabled={!canCreate}
-              className="self-start rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isLoading ? 'Working…' : 'Save story'}
-            </button>
-          </form>
-        </section>
-
-        {/* ── Section 2: My Stories ── */}
-        <section
-          aria-labelledby="my-stories-heading"
-          className="rounded-2xl bg-white p-6 shadow-sm"
-        >
-          <h2
-            id="my-stories-heading"
-            className="mb-5 text-lg font-semibold text-gray-900"
-          >
-            Your stories
-          </h2>
-
-          {/* Error — role="alert", preserves prior stories below */}
-          {error !== null ? (
-            <p
-              role="alert"
-              className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
-            >
-              {error.message}
-            </p>
-          ) : null}
-
-          {/* Loading skeleton (Req 14.3) — shown while isLoading is true */}
-          {isLoading ? (
-            <SkeletonList
-              rows={3}
-              label="Loading your STAR stories"
-            />
-          ) : null}
-
-          {/* Empty state — only when not loading and no stories */}
-          {!isLoading && orderedStories.length === 0 ? (
-            <p
-              role="status"
-              className="rounded-md bg-gray-50 px-4 py-6 text-center text-sm text-gray-500"
-            >
-              No STAR stories yet. Use the form above to create your first STAR story.
-            </p>
-          ) : null}
-
-          {/* Stories list — rendered whenever stories exist (Req 14.5).
-              Not gated by !isLoading so prior content stays visible during
-              subsequent refreshes. */}
-          {orderedStories.length > 0 ? (
-            <ul className="flex flex-col gap-3">
-              {orderedStories.map((story) => {
-                const isSelected = story.id === selectedId;
-                return (
-                  <li
-                    key={story.id}
-                    className={`rounded-xl border px-4 py-3 ${
-                      isSelected
-                        ? 'border-primary/40 bg-primary/5'
-                        : 'border-gray-200 bg-white'
-                    }`}
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex flex-col gap-0.5">
-                        <p className="font-medium text-gray-900">{story.title}</p>
-                        <p className="text-xs text-gray-500">
-                          Created {formatTimestamp(story.createdAt)}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={(): void =>
-                            setSelectedId((current) =>
-                              current === story.id ? null : story.id,
-                            )
-                          }
-                          aria-expanded={isSelected}
-                          className="rounded-md border border-primary px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/5 focus:outline-none focus:ring-2 focus:ring-primary/30"
-                        >
-                          {isSelected ? 'Hide' : 'View'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(): void => beginEdit(story)}
-                          disabled={isLoading}
-                          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          Edit
-                        </button>
-                        {pendingDeleteId === story.id ? (
-                          <span className="flex items-center gap-2">
-                            <span className="text-sm text-gray-700">Delete?</span>
-                            <button
-                              type="button"
-                              onClick={(): void => {
-                                void handleDelete(story.id);
-                              }}
-                              disabled={isLoading}
-                              className="rounded-md bg-red-100 px-3 py-1.5 text-sm font-medium text-red-800 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-300 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              Confirm
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(): void => setPendingDeleteId(null)}
-                              disabled={isLoading}
-                              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              Cancel
-                            </button>
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={(): void => setPendingDeleteId(story.id)}
-                            disabled={isLoading}
-                            aria-label={`Delete story ${story.title}`}
-                            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Inline edit form (Req 9.1) */}
-                    {editId === story.id ? (
-                      <StarEditForm
-                        fields={editFields}
-                        onChange={setEditFields}
-                        onSubmit={handleSaveEdit}
-                        onCancel={cancelEdit}
-                        canSave={canSaveEdit}
-                        isLoading={isLoading}
-                      />
-                    ) : isSelected ? (
-                      /* Read-only detail view (Req 8.2) */
-                      <StarDetail story={story} />
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
-          ) : null}
-        </section>
-
-      </div>
+          </ul>
+        ) : null}
+      </Panel>
     </div>
   );
 }
@@ -453,13 +423,13 @@ export function StarOrganizerPage(): JSX.Element {
 /** Read-only detail of a STAR story's four narrative fields (Req 8.2). */
 function StarDetail({ story }: { story: IStarStory }): JSX.Element {
   return (
-    <dl className="mt-3 flex flex-col gap-3 border-t border-gray-200 pt-3 text-sm">
+    <dl className="mt-4 flex flex-col gap-3 border-t border-gray-200 pt-3 text-sm">
       {STAR_TEXTAREAS.map(({ key, label }) => (
         <div key={key} className="flex flex-col gap-0.5">
-          <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">
+          <dt className="text-xs font-bold uppercase tracking-wider text-muted">
             {label}
           </dt>
-          <dd className="whitespace-pre-wrap text-gray-800">{story[key]}</dd>
+          <dd className="whitespace-pre-wrap text-ink">{story[key]}</dd>
         </div>
       ))}
     </dl>
@@ -488,16 +458,16 @@ function StarEditForm({
     <form
       onSubmit={onSubmit}
       aria-label="Edit STAR story"
-      className="mt-3 flex flex-col gap-4 border-t border-gray-200 pt-4"
+      className="mt-4 flex flex-col gap-4 border-t border-gray-200 pt-4"
     >
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="edit-title"
-          className="text-sm font-medium text-gray-800"
+          className="text-sm font-semibold text-muted"
         >
           Title
         </label>
-        <input
+        <Input
           id="edit-title"
           type="text"
           maxLength={TITLE_MAX}
@@ -507,9 +477,8 @@ function StarEditForm({
           }
           disabled={isLoading}
           aria-describedby="edit-title-hint"
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
         />
-        <span id="edit-title-hint" className="text-xs text-gray-500">
+        <span id="edit-title-hint" className="text-xs text-muted">
           {fields.title.trim().length}/{TITLE_MAX} characters
         </span>
       </div>
@@ -521,7 +490,7 @@ function StarEditForm({
           <div key={key} className="flex flex-col gap-1.5">
             <label
               htmlFor={fieldId}
-              className="text-sm font-medium text-gray-800"
+              className="text-sm font-semibold text-muted"
             >
               {label}
             </label>
@@ -535,9 +504,9 @@ function StarEditForm({
               }
               disabled={isLoading}
               aria-describedby={hintId}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+              className={TEXTAREA_CLASS}
             />
-            <span id={hintId} className="text-xs text-gray-500">
+            <span id={hintId} className="text-xs text-muted">
               {fields[key].trim().length}/{STAR_FIELD_MAX} characters
             </span>
           </div>
@@ -545,21 +514,20 @@ function StarEditForm({
       })}
 
       <div className="flex items-center gap-2">
-        <button
+        <Button
           type="submit"
           disabled={!canSave}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isLoading ? 'Saving…' : 'Save changes'}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="subtle"
           onClick={onCancel}
           disabled={isLoading}
-          className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );

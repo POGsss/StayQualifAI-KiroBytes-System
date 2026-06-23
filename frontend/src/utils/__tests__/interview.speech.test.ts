@@ -75,12 +75,10 @@ describe('speechReducer – Property 3', () => {
           // gets flushed. We need to track what interim was set before stop.
           let simulatedInterim = '';
           let simulatedFinal = '';
-          let simCapturing = false;
 
           for (const event of events) {
             switch (event.kind) {
               case 'start':
-                simCapturing = true;
                 break;
               case 'result':
                 simulatedFinal += event.finalChunk ?? '';
@@ -92,7 +90,6 @@ describe('speechReducer – Property 3', () => {
               case 'stop':
                 simulatedFinal += simulatedInterim;
                 simulatedInterim = '';
-                simCapturing = false;
                 break;
             }
           }

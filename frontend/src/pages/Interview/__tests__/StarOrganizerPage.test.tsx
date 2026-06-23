@@ -11,7 +11,6 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import type { JSX } from 'react';
 
 // ─── Mock the interview store ─────────────────────────────────────────────────
 vi.mock('../../../stores/interview.store');

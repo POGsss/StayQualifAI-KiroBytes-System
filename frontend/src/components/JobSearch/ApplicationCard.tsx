@@ -54,15 +54,15 @@ export function ApplicationCard({ application, onClickDetail }: ApplicationCardP
       role="button"
       tabIndex={0}
       aria-label={`${application.listingTitle} at ${application.listingCompany}`}
-      className="rounded-xl bg-white p-4 shadow-sm cursor-grab border border-gray-100 transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 active:cursor-grabbing"
+      className="rounded-xl bg-surface p-4 shadow-card cursor-grab border border-gray-200/60 transition-shadow hover:shadow-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:ring-offset-2 active:cursor-grabbing"
     >
-      <p className="text-sm font-medium text-gray-900 truncate">
+      <p className="text-sm font-bold text-ink truncate">
         {application.listingTitle}
       </p>
-      <p className="mt-1 text-xs text-gray-600 truncate">
+      <p className="mt-1 text-xs text-muted truncate">
         {application.listingCompany}
       </p>
-      <p className="mt-2 text-xs text-gray-400">
+      <p className="mt-2 text-xs text-muted">
         {formattedDate}
       </p>
     </div>

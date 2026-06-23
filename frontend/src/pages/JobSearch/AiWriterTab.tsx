@@ -2,6 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import type { JSX } from 'react';
 
 import { AiOutputPanel } from '../../components/JobSearch/AiOutputPanel';
+import { Button } from '../../components/Button';
+import { Input } from '../../components/Input';
+import { Panel } from '../../components/Panel';
+import { Select } from '../../components/Select';
 import { useJobSearchStore } from '../../stores/jobsearch.store';
 import type { AiContentType } from '../../stores/jobsearch.store';
 
@@ -63,45 +67,44 @@ export function AiWriterTab(): JSX.Element {
     void generateContent(contentType, selectedApplicationId, name, role);
   }, [canGenerate, contentType, selectedApplicationId, recipientName, recipientRole, generateContent]);
 
+  const appOptions = [
+    { value: '', label: 'Select an application…' },
+    ...applications.map((app) => ({
+      value: app.id,
+      label: `${app.listingTitle} — ${app.listingCompany}`,
+    })),
+  ];
+
   return (
     <div className="flex flex-col gap-6">
       {/* Form panel */}
-      <div className="rounded-2xl bg-white p-6 shadow-sm">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">AI Content Generator</h2>
-
+      <Panel title="AI Content Generator">
         <div className="flex flex-col gap-4">
           {/* Application selector */}
           <div className="flex flex-col gap-1">
             <label
               htmlFor="ai-application-select"
-              className="text-sm font-medium text-gray-700"
+              className="text-sm font-medium text-muted"
             >
               Application
             </label>
-            <select
+            <Select
               id="ai-application-select"
               value={selectedApplicationId}
               onChange={(e) => setSelectedApplicationId(e.target.value)}
               disabled={isLoading}
-              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-50"
-            >
-              <option value="">Select an application…</option>
-              {applications.map((app) => (
-                <option key={app.id} value={app.id}>
-                  {app.listingTitle} — {app.listingCompany}
-                </option>
-              ))}
-            </select>
+              options={appOptions}
+            />
           </div>
 
           {/* Content type selector */}
           <fieldset className="flex flex-col gap-1">
-            <legend className="text-sm font-medium text-gray-700">Content Type</legend>
+            <legend className="text-sm font-medium text-muted">Content Type</legend>
             <div className="mt-1 flex flex-wrap gap-4">
               {CONTENT_TYPES.map((type) => (
                 <label
                   key={type.id}
-                  className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer"
+                  className="flex items-center gap-2 text-sm text-ink cursor-pointer"
                 >
                   <input
                     type="radio"
@@ -110,7 +113,7 @@ export function AiWriterTab(): JSX.Element {
                     checked={contentType === type.id}
                     onChange={() => setContentType(type.id)}
                     disabled={isLoading}
-                    className="h-4 w-4 border-gray-300 text-primary focus:ring-primary/50"
+                    className="h-4 w-4 border-gray-300 text-accent-blue focus:ring-accent-blue/40"
                   />
                   {type.label}
                 </label>
@@ -120,54 +123,52 @@ export function AiWriterTab(): JSX.Element {
 
           {/* LinkedIn-specific fields */}
           {contentType === 'linkedin-outreach' && (
-            <div className="flex flex-col gap-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <div className="flex flex-col gap-4 rounded-[10px] border border-gray-200 bg-canvas p-4">
               <div className="flex flex-col gap-1">
                 <label
                   htmlFor="ai-recipient-name"
-                  className="text-sm font-medium text-gray-700"
+                  className="text-sm font-medium text-muted"
                 >
                   Recipient Name <span className="text-gray-400">(optional)</span>
                 </label>
-                <input
+                <Input
                   id="ai-recipient-name"
                   type="text"
                   value={recipientName}
                   onChange={(e) => setRecipientName(e.target.value)}
                   disabled={isLoading}
                   placeholder="e.g. Jane Smith"
-                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-50"
                 />
               </div>
               <div className="flex flex-col gap-1">
                 <label
                   htmlFor="ai-recipient-role"
-                  className="text-sm font-medium text-gray-700"
+                  className="text-sm font-medium text-muted"
                 >
                   Recipient Role <span className="text-gray-400">(optional)</span>
                 </label>
-                <input
+                <Input
                   id="ai-recipient-role"
                   type="text"
                   value={recipientRole}
                   onChange={(e) => setRecipientRole(e.target.value)}
                   disabled={isLoading}
                   placeholder="e.g. Hiring Manager"
-                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-50"
                 />
               </div>
             </div>
           )}
 
           {/* Generate button */}
-          <button
+          <Button
             type="button"
             onClick={handleGenerate}
             disabled={!canGenerate}
-            className="inline-flex items-center justify-center gap-2 self-start rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            className="self-start"
           >
             {isLoading && (
               <svg
-                className="h-4 w-4 animate-spin"
+                className="h-4 w-4 animate-spin mr-2"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -189,22 +190,22 @@ export function AiWriterTab(): JSX.Element {
               </svg>
             )}
             {isLoading ? 'Generating…' : 'Generate'}
-          </button>
+          </Button>
         </div>
-      </div>
+      </Panel>
 
       {/* Error alert */}
       {error !== null && (
         <div
           role="alert"
-          className="flex items-start justify-between rounded-lg bg-red-50 p-4 text-red-800"
+          className="flex items-start justify-between rounded-[10px] border border-accent-red/40 bg-accent-red/10 p-4 text-ink"
         >
           <p className="text-sm">{error.message}</p>
           <button
             type="button"
             onClick={clearError}
             aria-label="Dismiss error"
-            className="ms-4 shrink-0 rounded p-1 text-red-600 hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
+            className="ms-4 shrink-0 rounded p-1 text-accent-red hover:bg-accent-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-red/40"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

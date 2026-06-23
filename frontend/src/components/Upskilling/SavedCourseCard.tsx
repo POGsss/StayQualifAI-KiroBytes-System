@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import type { JSX } from 'react';
 
+import { Button } from '../Button';
+import { Panel } from '../Panel';
 import type { CostClassification, ISavedCourse } from '../../types/upskilling.types';
 
 /**
@@ -20,8 +22,8 @@ interface SavedCourseCardProps {
 }
 
 const COST_BADGE_STYLES: Record<CostClassification, string> = {
-  Free: 'bg-[#00F5D4]/20 text-emerald-700',
-  Paid: 'bg-[#9b5de5]/15 text-[#7a3fd0]',
+  Free: 'bg-accent-blue/10 text-accent-blue',
+  Paid: 'bg-accent-yellow/20 text-ink',
 };
 
 export function SavedCourseCard({ course, onDelete }: SavedCourseCardProps): JSX.Element {
@@ -37,11 +39,11 @@ export function SavedCourseCard({ course, onDelete }: SavedCourseCardProps): JSX
   };
 
   return (
-    <article className="rounded-2xl bg-white p-5 shadow-sm">
+    <Panel className="border border-gray-150">
       <div className="flex flex-col gap-3">
         {/* Header: title + cost badge */}
         <div className="flex items-start justify-between gap-3">
-          <h3 className="text-base font-semibold text-gray-900">{course.title}</h3>
+          <h3 className="text-base font-semibold text-ink">{course.title}</h3>
           <span
             className={[
               'shrink-0 rounded-full px-3 py-1 text-xs font-medium',
@@ -53,27 +55,23 @@ export function SavedCourseCard({ course, onDelete }: SavedCourseCardProps): JSX
         </div>
 
         {/* Provider */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600">
-          <span className="font-medium">{course.provider}</span>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
+          <span className="font-medium text-ink">{course.provider}</span>
         </div>
 
         {/* Actions: external link + Delete */}
         <div className="mt-1 flex items-center gap-2">
-          <a
-            href={course.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-lg bg-primary px-4 py-2
-              text-sm font-medium text-white transition-colors hover:bg-primary/90
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50
-              focus-visible:ring-offset-2"
+          <Button
+            type="button"
+            onClick={() => window.open(course.url, '_blank', 'noopener,noreferrer')}
+            size="sm"
           >
             View course
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
               fill="currentColor"
-              className="inline-block h-4 w-4"
+              className="inline-block h-4 w-4 ml-1"
               aria-hidden="true"
             >
               <path
@@ -82,20 +80,18 @@ export function SavedCourseCard({ course, onDelete }: SavedCourseCardProps): JSX
                 clipRule="evenodd"
               />
             </svg>
-          </a>
+          </Button>
 
-          <button
+          <Button
             type="button"
             onClick={() => void handleDelete()}
             disabled={deleting}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-4 py-2
-              text-sm font-medium text-gray-700 transition-colors hover:bg-red-50 hover:text-red-600
-              hover:border-red-200 disabled:cursor-not-allowed disabled:opacity-50
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50
-              focus-visible:ring-offset-2"
+            variant="outline"
+            size="sm"
+            className="text-accent-red hover:bg-accent-red/10 border-accent-red/20 focus-visible:ring-accent-red/40"
           >
             <svg
-              className="h-4 w-4"
+              className="h-4 w-4 mr-1"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -109,9 +105,9 @@ export function SavedCourseCard({ course, onDelete }: SavedCourseCardProps): JSX
               />
             </svg>
             {deleting ? 'Deleting…' : 'Delete'}
-          </button>
+          </Button>
         </div>
       </div>
-    </article>
+    </Panel>
   );
 }

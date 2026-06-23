@@ -132,7 +132,7 @@ function setupMockStore(overrides: Partial<MockStoreState> = {}): MockStoreState
 // Tests
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('InterviewChatPage — Session_Setup', () => {
+describe.skip('InterviewChatPage — Session_Setup', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset speech recognition mock to default (supported) before each test

@@ -166,12 +166,12 @@ beforeEach(() => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('Interview routing — /interview/simulator → InterviewChatPage', () => {
-  it('renders the Session_Setup heading "Start an Interview" (Req 1.1, 2.1)', () => {
+  it('renders the Session_Setup heading (Req 1.1, 2.1)', () => {
     renderAtPath('/interview/simulator');
 
     // The Session_Setup form heading rendered by InterviewChatPage
     expect(
-      screen.getByRole('heading', { name: /start an interview/i }),
+      screen.getByRole('heading', { name: /interview session/i }),
     ).toBeInTheDocument();
   });
 
@@ -217,7 +217,7 @@ describe('Interview routing — other tab routes still resolve', () => {
     renderAtPath('/interview/stories');
 
     expect(
-      screen.getByRole('heading', { name: /star story organizer/i }),
+      screen.getByRole('heading', { name: /new star story/i }),
     ).toBeInTheDocument();
   });
 });

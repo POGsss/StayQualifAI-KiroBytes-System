@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import type { ChangeEvent, FormEvent, JSX } from 'react';
 
+import { Button } from '../../components/Button';
+import { Input } from '../../components/Input';
+import { Panel } from '../../components/Panel';
 import { useResumeStore } from '../../stores/resume.store';
 import type { IResumeVersion } from '../../types/resume.types';
 
 /**
- * ResumeVersionsPage — Resume Version Snapshot Manager.
+ * ResumeVersionsPage — Resume Version Snapshot Manager (Bauhaus redesign).
  *
  * Lists the authenticated user's resume versions and lets them clone, rename,
  * and switch (activate) between them. All data and mutations flow through the
@@ -79,39 +82,37 @@ export function ResumeVersionsPage(): JSX.Element {
   }
 
   return (
-    <section aria-labelledby="versions-heading" className="rounded-2xl bg-surface p-6 shadow-panel">
-      <header className="mb-6">
-        <h1 id="versions-heading" className="text-2xl font-semibold text-primary">
-          Resume Versions
-        </h1>
-        <p className="mt-2 text-gray-600">
-          Clone, rename, and switch between targeted resume variants.
-        </p>
-      </header>
+    <Panel
+      aria-label="Resume Versions"
+      title="Resume Versions"
+    >
+      <p className="mb-6 text-sm text-muted">
+        Clone, rename, and switch between targeted resume variants.
+      </p>
 
       {error !== null ? (
         <p
           role="alert"
-          className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          className="mb-4 rounded-2xl border border-accent-red/40 bg-accent-red/10 px-4 py-3 text-sm text-ink"
         >
           {error.message}
         </p>
       ) : null}
 
       {isLoading ? (
-        <p role="status" className="rounded-md bg-gray-50 px-4 py-3 text-sm text-gray-600">
+        <p role="status" className="rounded-xl bg-canvas px-4 py-3 text-sm text-muted">
           Loading resume versions…
         </p>
       ) : null}
 
       {!isLoading && versions.length === 0 ? (
-        <p role="status" className="rounded-md bg-gray-50 px-4 py-3 text-sm text-gray-600">
+        <p role="status" className="rounded-xl bg-canvas px-4 py-3 text-sm text-muted">
           No resume versions yet. Build or upload a resume to create your first version.
         </p>
       ) : null}
 
       {versions.length > 0 ? (
-        <ul aria-label="Resume versions" className="flex flex-col gap-3">
+        <ul aria-label="Resume versions" className="flex flex-col gap-4">
           {versions.map((version) => {
             const isEditing = editingId === version.id;
             const canSave = draftName.trim().length > 0;
@@ -119,13 +120,13 @@ export function ResumeVersionsPage(): JSX.Element {
             return (
               <li
                 key={version.id}
-                className="rounded-lg border border-gray-200 bg-white px-4 py-3"
+                className="rounded-xl border border-gray-200 bg-canvas p-5 shadow-sm"
               >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
                     {isEditing ? (
                       <form
-                        className="flex flex-wrap items-center gap-2"
+                        className="flex flex-wrap items-center gap-3"
                         onSubmit={(event): void => {
                           void submitRename(event, version.id);
                         }}
@@ -133,48 +134,48 @@ export function ResumeVersionsPage(): JSX.Element {
                         <label htmlFor={`rename-${version.id}`} className="sr-only">
                           New name for {version.name}
                         </label>
-                        <input
-                          id={`rename-${version.id}`}
-                          type="text"
-                          value={draftName}
-                          onChange={onDraftChange}
-                          autoFocus
-                          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-100"
-                        />
-                        <button
+                        <div className="w-full max-w-sm">
+                          <Input
+                            id={`rename-${version.id}`}
+                            type="text"
+                            value={draftName}
+                            onChange={onDraftChange}
+                            autoFocus
+                          />
+                        </div>
+                        <Button
                           type="submit"
                           disabled={!canSave || isLoading}
-                          className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           Save
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           type="button"
+                          variant="subtle"
                           onClick={cancelRename}
-                          className="rounded-md px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-100"
                         >
                           Cancel
-                        </button>
+                        </Button>
                       </form>
                     ) : (
                       <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="truncate text-lg font-medium text-gray-900">
+                        <h2 className="truncate text-lg font-bold text-ink">
                           {version.name}
                         </h2>
                         {version.isActive ? (
-                          <span className="inline-flex items-center rounded-full bg-accent-green px-2.5 py-0.5 text-xs font-semibold text-gray-900">
+                          <span className="inline-flex items-center rounded-full bg-accent-blue/10 px-2.5 py-0.5 text-xs font-semibold text-accent-blue">
                             Active
                           </span>
                         ) : null}
                       </div>
                     )}
-                    <dl className="mt-1 flex flex-wrap gap-x-4 text-xs text-gray-500">
+                    <dl className="mt-2 flex flex-wrap gap-x-4 text-xs text-muted">
                       <div className="flex gap-1">
-                        <dt>Created</dt>
+                        <dt className="font-medium text-ink">Created</dt>
                         <dd>{formatTimestamp(version.createdAt)}</dd>
                       </div>
                       <div className="flex gap-1">
-                        <dt>Updated</dt>
+                        <dt className="font-medium text-ink">Updated</dt>
                         <dd>{formatTimestamp(version.updatedAt)}</dd>
                       </div>
                     </dl>
@@ -183,40 +184,37 @@ export function ResumeVersionsPage(): JSX.Element {
                   {!isEditing ? (
                     <div className="flex flex-wrap items-center gap-2">
                       {!version.isActive ? (
-                        <button
-                          type="button"
+                        <Button
+                          variant="primary"
                           onClick={(): void => {
                             void activateVersion(version.id);
                           }}
                           disabled={isLoading}
                           aria-label={`Make ${version.name} active`}
-                          className="rounded-md border border-primary px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           Make active
-                        </button>
+                        </Button>
                       ) : null}
-                      <button
-                        type="button"
+                      <Button
+                        variant="outline"
                         onClick={(): void => {
                           void cloneVersion(version.id);
                         }}
                         disabled={isLoading}
                         aria-label={`Clone ${version.name}`}
-                        className="rounded-md px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Clone
-                      </button>
-                      <button
-                        type="button"
+                      </Button>
+                      <Button
+                        variant="subtle"
                         onClick={(): void => {
                           beginRename(version);
                         }}
                         disabled={isLoading}
                         aria-label={`Rename ${version.name}`}
-                        className="rounded-md px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Rename
-                      </button>
+                      </Button>
                     </div>
                   ) : null}
                 </div>
@@ -225,6 +223,6 @@ export function ResumeVersionsPage(): JSX.Element {
           })}
         </ul>
       ) : null}
-    </section>
+    </Panel>
   );
 }

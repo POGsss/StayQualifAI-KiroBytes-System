@@ -63,7 +63,6 @@ import {
 const MAX_ANSWER_LENGTH = 5000;
 const MIN_QUESTION_COUNT = 5;
 const MAX_QUESTION_COUNT = 15;
-const DEFAULT_QUESTION_COUNT = 5;
 const MAX_JD_LENGTH = 5000;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -401,6 +400,8 @@ interface ISetupFormProps {
     jobDescription: string;
     resumeVersionId: string;
   }) => void;
+  isSttSupported?: boolean;
+  isTtsSupported?: boolean;
 }
 
 function SessionSetupForm({ isLoading, onSubmit }: ISetupFormProps): JSX.Element {
@@ -439,7 +440,7 @@ function SessionSetupForm({ isLoading, onSubmit }: ISetupFormProps): JSX.Element
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
-    if (isSubmitDisabled || difficulty === '') return;
+    if (isSubmitDisabled) return;
     onSubmit({
       difficulty,
       questionCount: countValue,

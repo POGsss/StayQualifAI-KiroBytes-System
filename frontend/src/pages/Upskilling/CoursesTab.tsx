@@ -3,6 +3,9 @@ import type { FormEvent, JSX } from 'react';
 
 import { CourseCard } from '../../components/Upskilling/CourseCard';
 import { SavedCourseCard } from '../../components/Upskilling/SavedCourseCard';
+import { Button } from '../../components/Button';
+import { Input } from '../../components/Input';
+import { Panel } from '../../components/Panel';
 import { useUpskillingStore } from '../../stores/upskilling.store';
 import type {
   CostClassification,
@@ -90,79 +93,64 @@ export function CoursesTab(): JSX.Element {
   return (
     <div className="flex flex-col gap-6">
       {/* Search panel */}
-      <section className="rounded-2xl bg-white p-6 shadow-sm">
+      <Panel title="Search courses &amp; certificates">
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="course-query" className="text-sm font-medium text-gray-700">
-              Search courses &amp; certificates
+            <label htmlFor="course-query" className="text-sm font-medium text-muted">
+              Query
             </label>
-            <input
+            <Input
               id="course-query"
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="e.g. React, data analysis, AWS certification"
               maxLength={100}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900
-                placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2
-                focus-visible:ring-primary/50"
             />
           </div>
 
-          {/* Cost filter — rounded-full pills */}
+          {/* Cost filter — pills */}
           <fieldset className="flex flex-col gap-1.5">
-            <legend className="text-sm font-medium text-gray-700">Cost</legend>
+            <legend className="text-sm font-medium text-muted">Cost</legend>
             <div className="flex flex-wrap gap-2" role="group" aria-label="Cost filter">
               {COST_FILTERS.map((option) => {
                 const active = costFilter === option;
                 return (
-                  <button
+                  <Button
                     key={option}
                     type="button"
                     aria-pressed={active}
                     onClick={() => setCostFilter(option)}
-                    className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors
-                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50
-                      focus-visible:ring-offset-2
-                      ${
-                        active
-                          ? 'bg-primary text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
+                    variant={active ? 'primary' : 'outline'}
+                    size="sm"
                   >
                     {option}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
           </fieldset>
 
           <div>
-            <button
+            <Button
               type="submit"
               disabled={!canSearch}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5
-                text-sm font-medium text-white transition-colors hover:bg-primary/90
-                disabled:cursor-not-allowed disabled:opacity-50
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50
-                focus-visible:ring-offset-2"
             >
               {status === 'loading' ? 'Searching…' : 'Search courses'}
-            </button>
+            </Button>
           </div>
         </form>
-      </section>
+      </Panel>
 
       {/* Dismissible error banner */}
       {error !== null && (
-        <div className="flex items-start justify-between gap-3 rounded-2xl bg-red-50 p-4">
-          <p className="text-sm text-red-600">{error.message}</p>
+        <div className="flex items-start justify-between gap-3 rounded-[10px] border border-accent-red/40 bg-accent-red/10 p-4 text-ink">
+          <p className="text-sm">{error.message}</p>
           <button
             type="button"
             onClick={clearError}
             aria-label="Dismiss error"
-            className="shrink-0 rounded-md p-1 text-red-500 transition-colors hover:bg-red-100
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+            className="shrink-0 rounded p-1 text-accent-red hover:bg-accent-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-red/40"
           >
             <svg
               className="h-4 w-4"
@@ -182,16 +170,16 @@ export function CoursesTab(): JSX.Element {
       {status === 'loading' && (
         <div className="flex flex-col gap-3" aria-label="Loading courses">
           {Array.from({ length: 3 }, (_, i) => (
-            <div key={i} className="animate-pulse rounded-2xl bg-white p-5 shadow-sm">
+            <div key={i} className="animate-pulse rounded-2xl bg-surface p-5 shadow-panel border border-gray-150">
               <div className="flex flex-col gap-3">
                 <div className="flex items-start justify-between">
-                  <div className="h-5 w-3/5 rounded bg-gray-200" />
-                  <div className="h-6 w-16 rounded-full bg-gray-200" />
+                  <div className="h-5 w-3/5 rounded bg-canvas" />
+                  <div className="h-6 w-16 rounded-full bg-canvas" />
                 </div>
-                <div className="h-4 w-32 rounded bg-gray-200" />
+                <div className="h-4 w-32 rounded bg-canvas" />
                 <div className="flex gap-2">
-                  <div className="h-9 w-28 rounded-lg bg-gray-200" />
-                  <div className="h-9 w-20 rounded-lg bg-gray-200" />
+                  <div className="h-9 w-28 rounded-lg bg-canvas" />
+                  <div className="h-9 w-20 rounded-lg bg-canvas" />
                 </div>
               </div>
             </div>
@@ -201,17 +189,17 @@ export function CoursesTab(): JSX.Element {
 
       {/* Empty state — search returned zero results (Req 5.5) */}
       {showEmptyState && (
-        <div className="rounded-2xl bg-white p-6 text-center shadow-sm">
-          <p className="text-sm text-gray-500">
+        <Panel className="bg-canvas border border-gray-200 text-center">
+          <p className="text-sm text-muted">
             No courses matched your search. Try a different topic or cost filter.
           </p>
-        </div>
+        </Panel>
       )}
 
       {/* Search results — rendered in API order, NOT re-sorted (Req 5.9) */}
       {status === 'idle' && searchResults.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold text-gray-900">
+          <h2 className="text-sm font-semibold text-ink">
             Recommendations ({searchResults.length})
           </h2>
           {searchResults.map((recommendation) => (
@@ -226,15 +214,15 @@ export function CoursesTab(): JSX.Element {
 
       {/* Saved courses */}
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold text-gray-900">
+        <h2 className="text-sm font-semibold text-ink">
           Saved courses ({savedCourses.length})
         </h2>
         {savedCourses.length === 0 ? (
-          <div className="rounded-2xl bg-white p-6 text-center shadow-sm">
-            <p className="text-sm text-gray-500">
+          <Panel className="bg-canvas border border-gray-200 text-center">
+            <p className="text-sm text-muted">
               You haven&apos;t saved any courses yet. Bookmark a recommendation to find it here.
             </p>
-          </div>
+          </Panel>
         ) : (
           savedCourses.map((course) => (
             <SavedCourseCard key={course.id} course={course} onDelete={handleDelete} />

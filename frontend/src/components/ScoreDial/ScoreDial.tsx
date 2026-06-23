@@ -41,12 +41,12 @@ function clampScore(value: number): number {
  */
 function bandStrokeClass(score: number): string {
   if (score >= 80) {
-    return 'text-accent-green';
+    return 'text-accent-blue';
   }
   if (score >= 50) {
     return 'text-accent-yellow';
   }
-  return 'text-primary';
+  return 'text-accent-red';
 }
 
 // SVG geometry constants for the radial ring.

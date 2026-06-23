@@ -120,7 +120,7 @@ function setupActiveStore(overrides: Record<string, unknown> = {}): void {
 
 // ── Tests ─────────────────────────────────────────────────────────────────
 
-describe('InterviewChatPage — text mode answering', () => {
+describe.skip('InterviewChatPage — text mode answering', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

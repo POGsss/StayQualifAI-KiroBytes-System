@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ChangeEvent, FormEvent, JSX } from 'react';
 
+import { Button } from '../../components/Button';
+import { Input } from '../../components/Input';
+import { Select } from '../../components/Select';
+import { Panel } from '../../components/Panel';
 import { MatchPanel } from '../../components/MatchPanel';
 import { useResumeStore } from '../../stores/resume.store';
 import type {
@@ -88,6 +92,11 @@ function itemsToLines(section: IResumeSection | undefined): string {
   return section ? section.items.join('\n') : '';
 }
 
+const TEXTAREA_CLASS =
+  'w-full rounded-[10px] border border-gray-200 bg-canvas px-4 py-2.5 text-sm text-ink ' +
+  'placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 ' +
+  'focus-visible:ring-bauhaus-blue/40 disabled:cursor-not-allowed disabled:opacity-50';
+
 export function ResumeBuilderPage(): JSX.Element {
   const templates = useResumeStore((state) => state.templates);
   const resumeContent = useResumeStore((state) => state.resumeContent);
@@ -116,6 +125,16 @@ export function ResumeBuilderPage(): JSX.Element {
     () => templates.find((template) => template.id === selectedTemplateId),
     [templates, selectedTemplateId],
   );
+
+  const templateOptions = useMemo(() => {
+    return [
+      { value: '', label: 'Select a template…' },
+      ...templates.map((template) => ({
+        value: template.id,
+        label: template.name,
+      })),
+    ];
+  }, [templates]);
 
   const isBusy = status === 'loading';
 
@@ -212,302 +231,278 @@ export function ResumeBuilderPage(): JSX.Element {
     resumeContent !== null && versionName.trim().length > 0 && !isBusy;
 
   return (
-    <section aria-labelledby="builder-heading" className="mx-auto flex max-w-3xl flex-col gap-8 rounded-2xl bg-surface p-6 shadow-panel">
-      <header className="flex flex-col gap-1">
-        <h1 id="builder-heading" className="text-2xl font-semibold text-primary">
-          Resume Builder
-        </h1>
-        <p className="text-gray-600">
-          Pick an ATS-parseable template, fill in each section, then save your resume
-          version.
-        </p>
-      </header>
-
+    <div className="flex flex-col gap-6">
       {error !== null ? (
         <p
           role="alert"
-          className="rounded-md border border-accent-pink bg-accent-pink/30 px-4 py-3 text-sm text-gray-800"
+          className="rounded-2xl border border-accent-red/40 bg-accent-red/10 px-4 py-3 text-sm text-ink"
         >
           {error.message}
         </p>
       ) : null}
 
       {/* Template selection (Req 5.1 / 5.2) */}
-      <section aria-labelledby="template-heading" className="flex flex-col gap-3">
-        <h2 id="template-heading" className="text-lg font-semibold text-gray-900">
-          Template
-        </h2>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="template-select" className="text-sm font-medium text-gray-800">
+      <Panel aria-label="Template selection" title="Template Selection">
+        <div className="flex flex-col gap-1.5 max-w-md">
+          <label htmlFor="template-select" className="text-sm font-medium text-muted">
             Choose a template
           </label>
-          <select
+          <Select
             id="template-select"
             value={selectedTemplateId}
             onChange={handleTemplateChange}
             disabled={isBusy && templates.length === 0}
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-100"
-          >
-            <option value="">Select a template…</option>
-            {templates.map((template) => (
-              <option key={template.id} value={template.id}>
-                {template.name}
-              </option>
-            ))}
-          </select>
+            options={templateOptions}
+          />
         </div>
-      </section>
+      </Panel>
 
       {/* Section editing + save (Req 5.3) */}
       {resumeContent !== null ? (
-        <form onSubmit={handleSave} className="flex flex-col gap-6">
-          {sectionTypes.includes('contact') ? (
-            <fieldset className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4">
-              <legend className="px-1 text-sm font-semibold text-gray-900">Contact</legend>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="contact-name" className="text-sm font-medium text-gray-800">
-                    Full name
-                  </label>
-                  <input
-                    id="contact-name"
-                    type="text"
-                    value={resumeContent.contact.name}
-                    onChange={(event): void => updateContactField('name', event.target.value)}
-                    className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-100"
-                  />
+        <Panel aria-label="Resume builder form" title="Edit Resume Content">
+          <form onSubmit={handleSave} className="flex flex-col gap-6">
+            {sectionTypes.includes('contact') ? (
+              <fieldset className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-canvas p-5">
+                <legend className="px-2 text-sm font-bold text-ink">Contact Info</legend>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="contact-name" className="text-sm font-medium text-muted">
+                      Full name
+                    </label>
+                    <Input
+                      id="contact-name"
+                      type="text"
+                      value={resumeContent.contact.name}
+                      onChange={(event): void => updateContactField('name', event.target.value)}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="contact-email" className="text-sm font-medium text-muted">
+                      Email
+                    </label>
+                    <Input
+                      id="contact-email"
+                      type="email"
+                      value={resumeContent.contact.email}
+                      onChange={(event): void => updateContactField('email', event.target.value)}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="contact-phone" className="text-sm font-medium text-muted">
+                      Phone
+                    </label>
+                    <Input
+                      id="contact-phone"
+                      type="tel"
+                      value={resumeContent.contact.phone ?? ''}
+                      onChange={(event): void => updateContactField('phone', event.target.value)}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="contact-location" className="text-sm font-medium text-muted">
+                      Location
+                    </label>
+                    <Input
+                      id="contact-location"
+                      type="text"
+                      value={resumeContent.contact.location ?? ''}
+                      onChange={(event): void =>
+                        updateContactField('location', event.target.value)
+                      }
+                    />
+                  </div>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="contact-email" className="text-sm font-medium text-gray-800">
-                    Email
+                  <label htmlFor="contact-links" className="text-sm font-medium text-muted">
+                    Links (one per line)
                   </label>
-                  <input
-                    id="contact-email"
-                    type="email"
-                    value={resumeContent.contact.email}
-                    onChange={(event): void => updateContactField('email', event.target.value)}
-                    className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-100"
+                  <textarea
+                    id="contact-links"
+                    rows={2}
+                    value={resumeContent.contact.links.join('\n')}
+                    onChange={(event): void => updateLinks(event.target.value)}
+                    className={TEXTAREA_CLASS}
                   />
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="contact-phone" className="text-sm font-medium text-gray-800">
-                    Phone
-                  </label>
-                  <input
-                    id="contact-phone"
-                    type="tel"
-                    value={resumeContent.contact.phone ?? ''}
-                    onChange={(event): void => updateContactField('phone', event.target.value)}
-                    className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-100"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="contact-location" className="text-sm font-medium text-gray-800">
-                    Location
-                  </label>
-                  <input
-                    id="contact-location"
-                    type="text"
-                    value={resumeContent.contact.location ?? ''}
-                    onChange={(event): void =>
-                      updateContactField('location', event.target.value)
-                    }
-                    className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-100"
-                  />
-                </div>
-              </div>
+              </fieldset>
+            ) : null}
+
+            {sectionTypes.includes('summary') ? (
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="contact-links" className="text-sm font-medium text-gray-800">
-                  Links (one per line)
+                <label htmlFor="summary" className="text-sm font-medium text-muted">
+                  Professional summary
                 </label>
                 <textarea
-                  id="contact-links"
-                  rows={2}
-                  value={resumeContent.contact.links.join('\n')}
-                  onChange={(event): void => updateLinks(event.target.value)}
-                  className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-100"
+                  id="summary"
+                  rows={3}
+                  value={resumeContent.summary}
+                  onChange={(event): void => updateSummary(event.target.value)}
+                  className={TEXTAREA_CLASS}
                 />
               </div>
-            </fieldset>
-          ) : null}
+            ) : null}
 
-          {sectionTypes.includes('summary') ? (
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="summary" className="text-sm font-medium text-gray-800">
-                Professional summary
-              </label>
-              <textarea
-                id="summary"
-                rows={3}
-                value={resumeContent.summary}
-                onChange={(event): void => updateSummary(event.target.value)}
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-100"
-              />
-            </div>
-          ) : null}
+            {sectionTypes.includes('experience') ? (
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="experience-section" className="text-sm font-medium text-muted">
+                  Experience (one bullet per line)
+                </label>
+                <textarea
+                  id="experience-section"
+                  rows={5}
+                  value={itemsToLines(resumeContent.experience[0])}
+                  onChange={(event): void => updateListSection('experience', event.target.value)}
+                  className={TEXTAREA_CLASS}
+                />
+              </div>
+            ) : null}
 
-          {sectionTypes.includes('experience') ? (
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="experience-section" className="text-sm font-medium text-gray-800">
-                Experience (one bullet per line)
-              </label>
-              <textarea
-                id="experience-section"
-                rows={5}
-                value={itemsToLines(resumeContent.experience[0])}
-                onChange={(event): void => updateListSection('experience', event.target.value)}
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-100"
-              />
-            </div>
-          ) : null}
+            {sectionTypes.includes('education') ? (
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="education-section" className="text-sm font-medium text-muted">
+                  Education (one entry per line)
+                </label>
+                <textarea
+                  id="education-section"
+                  rows={3}
+                  value={itemsToLines(resumeContent.education[0])}
+                  onChange={(event): void => updateListSection('education', event.target.value)}
+                  className={TEXTAREA_CLASS}
+                />
+              </div>
+            ) : null}
 
-          {sectionTypes.includes('education') ? (
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="education-section" className="text-sm font-medium text-gray-800">
-                Education (one entry per line)
-              </label>
-              <textarea
-                id="education-section"
-                rows={3}
-                value={itemsToLines(resumeContent.education[0])}
-                onChange={(event): void => updateListSection('education', event.target.value)}
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-100"
-              />
-            </div>
-          ) : null}
+            {sectionTypes.includes('skills') ? (
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="skills" className="text-sm font-medium text-muted">
+                  Skills (comma separated)
+                </label>
+                <Input
+                  id="skills"
+                  type="text"
+                  value={resumeContent.skills.join(', ')}
+                  onChange={(event): void => updateSkills(event.target.value)}
+                />
+              </div>
+            ) : null}
 
-          {sectionTypes.includes('skills') ? (
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="skills" className="text-sm font-medium text-gray-800">
-                Skills (comma separated)
+            {sectionTypes.includes('additional') ? (
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="additional-section" className="text-sm font-medium text-muted">
+                  Additional (one entry per line)
+                </label>
+                <textarea
+                  id="additional-section"
+                  rows={3}
+                  value={itemsToLines(resumeContent.additional[0])}
+                  onChange={(event): void => updateListSection('additional', event.target.value)}
+                  className={TEXTAREA_CLASS}
+                />
+              </div>
+            ) : null}
+
+            <div className="flex flex-col gap-1.5 max-w-md">
+              <label htmlFor="version-name" className="text-sm font-medium text-muted">
+                Version name
               </label>
-              <input
-                id="skills"
+              <Input
+                id="version-name"
                 type="text"
-                value={resumeContent.skills.join(', ')}
-                onChange={(event): void => updateSkills(event.target.value)}
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-100"
+                value={versionName}
+                onChange={(event): void => setVersionName(event.target.value)}
+                placeholder="e.g. Frontend Engineer — Acme"
               />
             </div>
-          ) : null}
 
-          {sectionTypes.includes('additional') ? (
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="additional-section" className="text-sm font-medium text-gray-800">
-                Additional (one entry per line)
-              </label>
-              <textarea
-                id="additional-section"
-                rows={3}
-                value={itemsToLines(resumeContent.additional[0])}
-                onChange={(event): void => updateListSection('additional', event.target.value)}
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-100"
-              />
-            </div>
-          ) : null}
-
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="version-name" className="text-sm font-medium text-gray-800">
-              Version name
-            </label>
-            <input
-              id="version-name"
-              type="text"
-              value={versionName}
-              onChange={(event): void => setVersionName(event.target.value)}
-              placeholder="e.g. Frontend Engineer — Acme"
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-100"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={!canSave}
-            className="self-start rounded-md bg-primary px-4 py-2 font-medium text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isBusy ? 'Saving…' : 'Save resume version'}
-          </button>
-        </form>
+            <Button
+              type="submit"
+              disabled={!canSave}
+              className="self-start"
+            >
+              {isBusy ? 'Saving…' : 'Save resume version'}
+            </Button>
+          </form>
+        </Panel>
       ) : (
-        <p className="text-sm text-gray-500">
-          Select a template above to start building your resume.
-        </p>
+        <Panel aria-label="No template selected">
+          <p className="text-sm text-muted">
+            Select a template above to start building your resume.
+          </p>
+        </Panel>
       )}
 
       {/* Semantic job-match analysis (Req 6.2) */}
-      <section aria-labelledby="match-section-heading" className="flex flex-col gap-3">
-        <h2 id="match-section-heading" className="text-lg font-semibold text-gray-900">
-          Job match
-        </h2>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="job-description" className="text-sm font-medium text-gray-800">
-            Job description
-          </label>
-          <textarea
-            id="job-description"
-            rows={4}
-            value={jobDescription}
-            onChange={(event): void => setJobDescription(event.target.value)}
-            placeholder="Paste the job description to analyze how well your resume matches."
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-100"
-          />
+      <Panel aria-label="Job match" title="Job Match">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="job-description" className="text-sm font-medium text-muted">
+              Job description
+            </label>
+            <textarea
+              id="job-description"
+              rows={4}
+              value={jobDescription}
+              onChange={(event): void => setJobDescription(event.target.value)}
+              placeholder="Paste the job description to analyze how well your resume matches."
+              className={TEXTAREA_CLASS}
+            />
+          </div>
+          <Button
+            type="button"
+            onClick={(): void => {
+              void handleAnalyzeMatch();
+            }}
+            disabled={
+              resumeContent === null || jobDescription.trim().length === 0 || isBusy
+            }
+            className="self-start"
+          >
+            Analyze match
+          </Button>
+          {matchResult !== null ? <MatchPanel result={matchResult} /> : null}
         </div>
-        <button
-          type="button"
-          onClick={(): void => {
-            void handleAnalyzeMatch();
-          }}
-          disabled={
-            resumeContent === null || jobDescription.trim().length === 0 || isBusy
-          }
-          className="self-start rounded-md bg-primary px-4 py-2 font-medium text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Analyze match
-        </button>
-        {matchResult !== null ? <MatchPanel result={matchResult} /> : null}
-      </section>
+      </Panel>
 
       {/* X-Y-Z achievement bullet generation (Req 7.1) */}
-      <section aria-labelledby="bullets-section-heading" className="flex flex-col gap-3">
-        <h2 id="bullets-section-heading" className="text-lg font-semibold text-gray-900">
-          Achievement bullets
-        </h2>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="experience-input" className="text-sm font-medium text-gray-800">
-            Describe an experience
-          </label>
-          <textarea
-            id="experience-input"
-            rows={3}
-            value={experienceText}
-            onChange={(event): void => setExperienceText(event.target.value)}
-            placeholder="Describe what you did, and we'll rewrite it as X-Y-Z achievement bullets."
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-100"
-          />
+      <Panel aria-label="Achievement bullets" title="Achievement Bullets">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="experience-input" className="text-sm font-medium text-muted">
+              Describe an experience
+            </label>
+            <textarea
+              id="experience-input"
+              rows={3}
+              value={experienceText}
+              onChange={(event): void => setExperienceText(event.target.value)}
+              placeholder="Describe what you did, and we'll rewrite it as X-Y-Z achievement bullets."
+              className={TEXTAREA_CLASS}
+            />
+          </div>
+          <Button
+            type="button"
+            onClick={(): void => {
+              void handleGenerateBullets();
+            }}
+            disabled={experienceText.trim().length === 0 || isBusy}
+            className="self-start"
+          >
+            Generate bullets
+          </Button>
+          {bullets.length > 0 ? (
+            <ul aria-label="Generated achievement bullets" className="flex flex-col gap-3 mt-2">
+              {bullets.map((bullet, index) => (
+                <li
+                  key={`${index}-${bullet}`}
+                  className="rounded-xl border border-gray-200 bg-canvas px-4 py-3 text-sm text-ink"
+                >
+                  {bullet}
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
-        <button
-          type="button"
-          onClick={(): void => {
-            void handleGenerateBullets();
-          }}
-          disabled={experienceText.trim().length === 0 || isBusy}
-          className="self-start rounded-md bg-primary px-4 py-2 font-medium text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Generate bullets
-        </button>
-        {bullets.length > 0 ? (
-          <ul aria-label="Generated achievement bullets" className="flex flex-col gap-2">
-            {bullets.map((bullet, index) => (
-              <li
-                key={`${index}-${bullet}`}
-                className="rounded-md border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800"
-              >
-                {bullet}
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </section>
-    </section>
+      </Panel>
+    </div>
   );
 }

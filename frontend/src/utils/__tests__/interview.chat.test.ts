@@ -74,7 +74,7 @@ describe('deriveChatThread — Property 1', () => {
           // Each message's position must be >= the previous one.
           // Two consecutive messages can share a position (assistant then user
           // for the same question), but the position must never go backwards.
-          expect(messages[i].position).toBeGreaterThanOrEqual(messages[i - 1].position);
+          expect(messages[i]!.position).toBeGreaterThanOrEqual(messages[i - 1]!.position);
         }
       }),
       { numRuns: 100 },
@@ -93,12 +93,12 @@ describe('deriveChatThread — Property 1', () => {
           const { messages } = deriveChatThread(questions);
 
           for (let i = 0; i < messages.length; i++) {
-            const msg = messages[i];
-            const sourceId = msg.id.split(':')[0];
+            const msg = messages[i]!;
+            const sourceId = msg.id.split(':')[0]!;
 
             if (msg.role === 'assistant' && answeredById.has(sourceId)) {
               // The next message must be the user companion for this question
-              const next = messages[i + 1];
+              const next = messages[i + 1]!;
               expect(next).toBeDefined();
               expect(next.role).toBe('user');
               expect(next.position).toBe(msg.position);
@@ -107,7 +107,7 @@ describe('deriveChatThread — Property 1', () => {
               // Text content correctness (Req 10.1 — captions always present)
               const source = answeredById.get(sourceId)!;
               expect(msg.text).toBe(source.text);
-              expect(next.text).toBe(source.answerText);
+              expect(next.text).toBe(source.answerText || '');
             }
           }
         }),
@@ -134,8 +134,8 @@ describe('deriveChatThread — Property 1', () => {
           } else {
             // Must be the lowest-positioned unanswered question
             expect(currentQuestion).not.toBeNull();
-            expect(currentQuestion!.id).toBe(unanswered[0].id);
-            expect(currentQuestion!.position).toBe(unanswered[0].position);
+            expect(currentQuestion!.id).toBe(unanswered[0]!.id);
+            expect(currentQuestion!.position).toBe(unanswered[0]!.position);
           }
         }),
         { numRuns: 100 },
@@ -154,7 +154,7 @@ describe('deriveChatThread — Property 1', () => {
           if (currentQuestion === null && messages.length > 0) {
             // When all questions are answered, every assistant message has a
             // user companion, so the very last message in the thread is a user message.
-            const last = messages[messages.length - 1];
+            const last = messages[messages.length - 1]!;
             expect(last.role).toBe('user');
           }
         }),
