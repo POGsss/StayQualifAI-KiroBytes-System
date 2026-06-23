@@ -18,7 +18,7 @@
  * Requirements: 4.3, 4.4, 5.1, 10.4, 10.6, 12.1, 12.2
  */
 
-import { type JSX } from 'react';
+import { type JSX, useEffect, useState } from 'react';
 import { VoiceOrb } from '../VoiceOrb';
 
 // Use hex values directly — avoids any Tailwind JIT class-generation uncertainty
@@ -118,6 +118,22 @@ export function VoiceStage({
   const ctaDisabled = isProcessing || isSpeaking || !isSttSupported;
   const trimmedTranscript = liveTranscript.trim();
 
+  // Clamp the orb to the viewport so it never forces horizontal scroll on
+  // small screens, while keeping the full design size on desktop. The orb is
+  // purely decorative, so a resize listener here has no a11y impact.
+  const [viewportWidth, setViewportWidth] = useState<number>(() =>
+    typeof window === 'undefined' ? 1024 : window.innerWidth,
+  );
+  useEffect(() => {
+    const onResize = (): void => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return (): void => window.removeEventListener('resize', onResize);
+  }, []);
+  const effectiveOrbSize = Math.max(
+    160,
+    Math.min(orbSize, Math.round(viewportWidth * 0.62)),
+  );
+
   return (
     <section
       aria-label="Voice answer stage"
@@ -127,7 +143,7 @@ export function VoiceStage({
       {/* ── 1. Orb with pulsing ring while recording ─────────────────────── */}
       <div
         className="relative flex items-center justify-center"
-        style={{ width: orbSize, height: orbSize }}
+        style={{ width: effectiveOrbSize, height: effectiveOrbSize }}
       >
         {/* Pulsing ring — turquoise while recording (opacity-based, no scale overflow) */}
         {isListening && (
@@ -135,8 +151,8 @@ export function VoiceStage({
             aria-hidden="true"
             className="pointer-events-none absolute animate-pulse rounded-full"
             style={{
-              width: orbSize + 16,
-              height: orbSize + 16,
+              width: effectiveOrbSize + 16,
+              height: effectiveOrbSize + 16,
               top: -8,
               left: -8,
               border: `3px solid ${TEAL}`,
@@ -150,8 +166,8 @@ export function VoiceStage({
             aria-hidden="true"
             className="pointer-events-none absolute rounded-full"
             style={{
-              width: orbSize + 6,
-              height: orbSize + 6,
+              width: effectiveOrbSize + 6,
+              height: effectiveOrbSize + 6,
               top: -3,
               left: -3,
               border: `2px solid ${TEAL}`,
@@ -164,7 +180,7 @@ export function VoiceStage({
           isAISpeaking={isSpeaking}
           isUserSpeaking={isListening}
           isLoading={isProcessing}
-          size={orbSize}
+          size={effectiveOrbSize}
           dotColor={isListening ? TEAL : PURPLE}
         />
       </div>

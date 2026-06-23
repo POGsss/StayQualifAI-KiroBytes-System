@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { ChangeEvent, FormEvent, JSX } from 'react';
+import type { ChangeEvent, FormEvent, JSX, KeyboardEvent } from 'react';
 
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
@@ -20,7 +20,8 @@ import { Pencil, Check, X } from 'lucide-react';
  * - On mount, loads the version list (single `useEffect`).
  * - Each version shows its name, created/updated timestamps, and an "Active"
  *   indicator for the single active version (single-active invariant, Req 10.2).
- * - "Make active" activates a version (hidden for the already-active one).
+ * - Clicking a (non-active) row activates that version — the whole item is the
+ *   activation control; there is no separate "Make active" button.
  * - "Clone" clones a version into a new variant (Req 8.1).
  * - "Rename" toggles an inline controlled text input; saving calls the store
  *   (Req 9.1). Saving is disabled while the trimmed input is blank.
@@ -118,11 +119,41 @@ export function ResumeVersionsPage(): JSX.Element {
           {versions.map((version) => {
             const isEditing = editingId === version.id;
             const canSave = draftName.trim().length > 0;
+            // The whole row activates the version (its old "Make active"
+            // button's behaviour) when it isn't already active or being renamed.
+            const activatable = !version.isActive && !isEditing;
+
+            const activate = (): void => {
+              if (!activatable || isLoading) {
+                return;
+              }
+              void activateVersion(version.id);
+            };
 
             return (
               <li
                 key={version.id}
-                className="rounded-xl border border-gray-200 bg-canvas p-5 shadow-sm"
+                {...(activatable
+                  ? {
+                      role: 'button',
+                      tabIndex: 0,
+                      'aria-label': `Make ${version.name} active`,
+                      onClick: activate,
+                      onKeyDown: (event: KeyboardEvent<HTMLLIElement>): void => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          activate();
+                        }
+                      },
+                    }
+                  : {})}
+                className={`rounded-xl border bg-canvas p-5 shadow-sm transition-colors ${
+                  version.isActive
+                    ? 'border-accent-blue'
+                    : activatable
+                      ? 'border-gray-200 cursor-pointer hover:border-accent-blue/60 hover:bg-accent-blue/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bauhaus-blue/40'
+                      : 'border-gray-200'
+                }`}
               >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
@@ -170,7 +201,8 @@ export function ResumeVersionsPage(): JSX.Element {
                         </h2>
                         <button
                           type="button"
-                          onClick={(): void => {
+                          onClick={(event): void => {
+                            event.stopPropagation();
                             beginRename(version);
                           }}
                           disabled={isLoading}
@@ -200,21 +232,10 @@ export function ResumeVersionsPage(): JSX.Element {
 
                   {!isEditing ? (
                     <div className="flex flex-wrap items-center gap-2">
-                      {!version.isActive ? (
-                        <Button
-                          variant="primary"
-                          onClick={(): void => {
-                            void activateVersion(version.id);
-                          }}
-                          disabled={isLoading}
-                          aria-label={`Make ${version.name} active`}
-                        >
-                          Make active
-                        </Button>
-                      ) : null}
                       <Button
                         variant="outline"
-                        onClick={(): void => {
+                        onClick={(event): void => {
+                          event.stopPropagation();
                           void cloneVersion(version.id);
                         }}
                         disabled={isLoading}
@@ -224,14 +245,14 @@ export function ResumeVersionsPage(): JSX.Element {
                       </Button>
 
                       <Button
-                        variant="subtle"
-                        onClick={(): void => {
+                        variant="primary"
+                        onClick={(event): void => {
+                          event.stopPropagation();
                           if (window.confirm(`Are you sure you want to delete "${version.name}"?`)) {
                             void deleteVersion(version.id);
                           }
                         }}
                         disabled={isLoading}
-                        className="border-none text-accent-red hover:bg-accent-red/10"
                         aria-label={`Delete ${version.name}`}
                       >
                         Delete

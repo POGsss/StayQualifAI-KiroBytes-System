@@ -144,7 +144,7 @@ function SessionDetail({
       </div>
 
       {/* Meta */}
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+      <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
         <div className="flex flex-col gap-0.5">
           <dt className="text-xs font-semibold uppercase tracking-wide text-muted">Questions</dt>
           <dd className="font-semibold text-ink">{activeSession.questionCount}</dd>

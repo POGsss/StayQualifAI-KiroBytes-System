@@ -398,7 +398,41 @@ function AvatarImage({
   );
 }
 
-function Sidebar(): JSX.Element {
+/** Hamburger menu icon used by the mobile top-bar toggle. */
+const MENU_ICON = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-6 w-6">
+    <path d="M3 12h18M3 6h18M3 18h18" />
+  </svg>
+);
+
+/** Close (X) icon used by the mobile drawer's dismiss button. */
+const CLOSE_ICON = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-5 w-5">
+    <path d="M18 6 6 18M6 6l12 12" />
+  </svg>
+);
+
+/**
+ * The fixed Bauhaus sidebar.
+ *
+ * Responsive behaviour (existing desktop design preserved):
+ * - Desktop (lg+): full 300px sidebar with profile card, labelled module
+ *   links, and logout card — unchanged.
+ * - Tablet (md–lg): collapses to an icon-only rail (labels/subtitles hidden,
+ *   items centred).
+ * - Mobile (<md): becomes a slide-out drawer toggled from the top bar. It
+ *   slides in from the left over a backdrop and shows the full labelled layout.
+ *
+ * `mobileOpen`/`onClose` only affect the <md drawer; from md upward the
+ * sidebar is always visible and `translate-x-0` is forced.
+ */
+function Sidebar({
+  mobileOpen,
+  onClose,
+}: {
+  mobileOpen: boolean;
+  onClose: () => void;
+}): JSX.Element {
   const signOut = useAuthStore((state) => state.signOut);
   const isSigningOut = useAuthStore((state) => state.isSigningOut);
   const identity = useAuthStore((state) => state.identity);
@@ -412,13 +446,31 @@ function Sidebar(): JSX.Element {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-y-0 left-0 flex w-[300px] flex-col justify-between bg-sidebar p-5 text-white"
+      className={[
+        'fixed inset-y-0 left-0 z-50 flex flex-col justify-between bg-sidebar text-white',
+        'transition-transform duration-300 ease-in-out',
+        // Widths per breakpoint: mobile drawer → tablet rail → desktop full.
+        'w-[280px] p-5 md:w-[88px] md:p-3 lg:w-[300px] lg:p-5',
+        // Drawer slide on mobile; always visible from md upward.
+        mobileOpen ? 'translate-x-0' : '-translate-x-full',
+        'md:translate-x-0',
+      ].join(' ')}
     >
       {/* Top: user profile card + module links (no brand logo, per Figma) */}
       <div className="flex flex-col gap-5">
+        {/* Mobile-only drawer close button */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close navigation"
+          className="self-end rounded-[10px] p-1.5 text-white/70 transition-colors hover:bg-white/10 hover:text-white md:hidden"
+        >
+          {CLOSE_ICON}
+        </button>
+
         {/* User profile card */}
-        <div className="flex items-center gap-2.5 rounded-[10px] bg-[#2d2d2d] p-2.5">
-          <span className="flex size-[50px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent-blue text-base font-semibold text-white">
+        <div className="flex items-center gap-2.5 rounded-[10px] bg-[#2d2d2d] p-2.5 md:justify-center md:p-1.5 lg:justify-start lg:p-2.5">
+          <span className="flex size-[50px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent-blue text-base font-semibold text-white md:size-[44px] lg:size-[50px]">
             {avatarUrl !== null ? (
               <img
                 src={avatarUrl}
@@ -435,7 +487,7 @@ function Sidebar(): JSX.Element {
               />
             )}
           </span>
-          <span className="flex min-w-0 flex-col gap-[5px]">
+          <span className="flex min-w-0 flex-col gap-[5px] md:hidden lg:flex">
             <span className="truncate text-sm font-bold text-white">
               {displayName}
             </span>
@@ -444,14 +496,16 @@ function Sidebar(): JSX.Element {
         </div>
 
         {/* Module navigation */}
-        <ul className="flex flex-col">
+        <ul className="flex flex-col gap-1">
           {MODULE_LINKS.map((link) => (
             <li key={link.to}>
               <NavLink
                 to={link.to}
+                title={link.label}
                 className={({ isActive }: { isActive: boolean }): string =>
                   [
                     'flex h-[50px] items-center gap-2.5 rounded-[10px] p-2.5 text-sm font-bold transition-colors',
+                    'md:justify-center md:p-2.5 lg:justify-start',
                     isActive
                       ? 'bg-white text-ink'
                       : 'text-white hover:bg-white/10',
@@ -463,7 +517,7 @@ function Sidebar(): JSX.Element {
                   fallback={link.fallbackIcon}
                   className="size-[30px] shrink-0"
                 />
-                {link.label}
+                <span className="md:hidden lg:inline">{link.label}</span>
               </NavLink>
             </li>
           ))}
@@ -477,9 +531,10 @@ function Sidebar(): JSX.Element {
           void signOut();
         }}
         disabled={isSigningOut}
-        className="flex w-full items-center justify-between rounded-[10px] bg-[#2d2d2d] p-2.5 text-left transition-colors hover:bg-[#383838] disabled:cursor-not-allowed disabled:opacity-60"
+        title="Logout Account"
+        className="flex w-full items-center justify-between rounded-[10px] bg-[#2d2d2d] p-2.5 text-left transition-colors hover:bg-[#383838] disabled:cursor-not-allowed disabled:opacity-60 md:justify-center lg:justify-between"
       >
-        <span className="flex flex-col gap-[5px]">
+        <span className="flex flex-col gap-[5px] md:hidden lg:flex">
           <span className="text-sm font-bold text-white">
             {isSigningOut ? 'Logging out…' : 'Logout Account'}
           </span>
@@ -495,24 +550,58 @@ function Sidebar(): JSX.Element {
   );
 }
 
-function TopBar(): JSX.Element {
+function TopBar({ onMenuClick }: { onMenuClick: () => void }): JSX.Element {
   const title = useModuleTitle();
 
   return (
-    <header className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 bg-surface px-8 py-5">
-      <h1 className="font-heading text-2xl font-bold text-ink">{title}</h1>
+    <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-surface px-4 py-4 sm:px-6 lg:px-8 lg:py-5">
+      <div className="flex items-center gap-2">
+        {/* Mobile-only hamburger to open the navigation drawer */}
+        <button
+          type="button"
+          onClick={onMenuClick}
+          aria-label="Open navigation"
+          className="-ml-1 inline-flex h-11 w-11 items-center justify-center rounded-[10px] text-ink transition-colors hover:bg-canvas md:hidden"
+        >
+          {MENU_ICON}
+        </button>
+        <h1 className="font-heading text-xl font-bold text-ink sm:text-2xl">{title}</h1>
+      </div>
       <ModuleTabs />
     </header>
   );
 }
 
 function AppShell({ children }: { children: ReactNode }): JSX.Element {
+  const { pathname } = useLocation();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  // Auto-close the mobile drawer whenever the route changes (e.g. after
+  // tapping a module link) so the content is immediately visible.
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
+
   return (
     <div className="min-h-screen bg-canvas text-ink">
-      <Sidebar />
-      <div className="pl-[300px]">
-        <TopBar />
-        <main className="px-8 py-8">{children}</main>
+      <Sidebar
+        mobileOpen={mobileNavOpen}
+        onClose={(): void => setMobileNavOpen(false)}
+      />
+
+      {/* Backdrop behind the mobile drawer; click to dismiss. */}
+      {mobileNavOpen ? (
+        <button
+          type="button"
+          aria-label="Close navigation"
+          onClick={(): void => setMobileNavOpen(false)}
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+        />
+      ) : null}
+
+      <div className="pl-0 md:pl-[88px] lg:pl-[300px]">
+        <TopBar onMenuClick={(): void => setMobileNavOpen(true)} />
+        <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>
       </div>
     </div>
   );

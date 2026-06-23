@@ -64,7 +64,7 @@ export function KanbanColumn({
       onDrop={handleDrop}
       aria-label={`${stage} column, ${applications.length} applications`}
       className={[
-        'flex flex-col gap-3 rounded-2xl p-4 min-h-[400px] flex-1 border transition-colors',
+        'flex flex-col gap-3 rounded-2xl p-4 min-h-[400px] flex-1 min-w-[260px] lg:min-w-0 border transition-colors',
         isDragOver
           ? 'bg-accent-blue/5 border-accent-blue/30 border-dashed border-2'
           : 'bg-canvas border-gray-200/60 shadow-sm',

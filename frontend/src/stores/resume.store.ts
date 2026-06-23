@@ -71,6 +71,18 @@ export interface IResumeState {
   templates: IResumeTemplate[];
   status: ResumeStatus;
   error: IStoreError | null;
+  /**
+   * Persisted UI state. These mirror per-page form/selection state in the
+   * Scanner and Builder so it survives tab switches and navigation to other
+   * modules within the SPA session (the store is a module-level singleton).
+   */
+  uploadedFile: File | null;
+  scannerJobDescription: string;
+  selectedTemplateId: string;
+  builderJobDescription: string;
+  builderVersionName: string;
+  builderExperienceText: string;
+  builderTab: 'edit' | 'preview';
 }
 
 /** Action surface of the resume store. */
@@ -101,6 +113,13 @@ export interface IResumeActions {
   activateVersion: (id: string) => Promise<IResumeVersion | null>;
   deleteVersion: (id: string) => Promise<IResumeVersion | null>;
   setResumeContent: (content: IStructuredResume | null) => void;
+  setUploadedFile: (file: File | null) => void;
+  setScannerJobDescription: (value: string) => void;
+  setSelectedTemplateId: (value: string) => void;
+  setBuilderJobDescription: (value: string) => void;
+  setBuilderVersionName: (value: string) => void;
+  setBuilderExperienceText: (value: string) => void;
+  setBuilderTab: (value: 'edit' | 'preview') => void;
   clearError: () => void;
   reset: () => void;
 }
@@ -120,6 +139,13 @@ const initialState: IResumeState = {
   templates: [],
   status: 'idle',
   error: null,
+  uploadedFile: null,
+  scannerJobDescription: '',
+  selectedTemplateId: '',
+  builderJobDescription: '',
+  builderVersionName: '',
+  builderExperienceText: '',
+  builderTab: 'edit',
 };
 
 /** Convert any thrown value into the normalized `IStoreError` shape. */
@@ -351,6 +377,34 @@ export const useResumeStore = create<IResumeStore>((set, get) => ({
 
   setResumeContent: (content: IStructuredResume | null): void => {
     set({ resumeContent: content });
+  },
+
+  setUploadedFile: (file: File | null): void => {
+    set({ uploadedFile: file });
+  },
+
+  setScannerJobDescription: (value: string): void => {
+    set({ scannerJobDescription: value });
+  },
+
+  setSelectedTemplateId: (value: string): void => {
+    set({ selectedTemplateId: value });
+  },
+
+  setBuilderJobDescription: (value: string): void => {
+    set({ builderJobDescription: value });
+  },
+
+  setBuilderVersionName: (value: string): void => {
+    set({ builderVersionName: value });
+  },
+
+  setBuilderExperienceText: (value: string): void => {
+    set({ builderExperienceText: value });
+  },
+
+  setBuilderTab: (value: 'edit' | 'preview'): void => {
+    set({ builderTab: value });
   },
 
   clearError: (): void => {

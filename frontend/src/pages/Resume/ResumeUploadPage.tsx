@@ -31,7 +31,7 @@
  * Named exports only. No `any`.
  */
 
-import { useCallback, useMemo, useState, type JSX } from 'react';
+import { useCallback, useMemo, type JSX } from 'react';
 
 import { Button } from '../../components/Button';
 import { KpiCard } from '../../components/KpiCard';
@@ -152,8 +152,13 @@ export function ResumeUploadPage(): JSX.Element {
   const uploadResume = useResumeStore((state) => state.uploadResume);
   const scan = useResumeStore((state) => state.scan);
 
-  const [file, setFile] = useState<File | null>(null);
-  const [jobDescription, setJobDescription] = useState<string>('');
+  // Persisted across navigation so the upload + JD survive leaving the page.
+  const file = useResumeStore((state) => state.uploadedFile);
+  const setFile = useResumeStore((state) => state.setUploadedFile);
+  const jobDescription = useResumeStore((state) => state.scannerJobDescription);
+  const setJobDescription = useResumeStore(
+    (state) => state.setScannerJobDescription,
+  );
 
   const isLoading = status === 'loading';
   const canScan = file !== null && !isLoading;
@@ -278,7 +283,7 @@ export function ResumeUploadPage(): JSX.Element {
               Resume Preview
             </h2>
 
-            <div className="min-h-[20rem] flex-1 overflow-hidden rounded-xl bg-canvas">
+            <div className="min-h-[20rem] flex-1">
               <ResumePdfPreview file={file} />
             </div>
 

@@ -6,6 +6,7 @@ import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { Panel } from '../../components/Panel';
 import { MatchPanel } from '../../components/MatchPanel';
+import { DocumentPageNav, ResumeDocumentFrame } from '../../components/Resume';
 import { useResumeStore } from '../../stores/resume.store';
 import { useAuthStore } from '../../stores/auth.store';
 import type {
@@ -111,14 +112,26 @@ export function ResumeBuilderPage(): JSX.Element {
   const navigate = useNavigate();
   const identity = useAuthStore((state) => state.identity);
 
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
-  const [versionName, setVersionName] = useState<string>('');
-  const [jobDescription, setJobDescription] = useState<string>('');
-  const [experienceText, setExperienceText] = useState<string>('');
+  // Builder form/selection state lives in the store so it persists across tab
+  // switches and navigation to other modules within the SPA session.
+  const selectedTemplateId = useResumeStore((state) => state.selectedTemplateId);
+  const setSelectedTemplateId = useResumeStore(
+    (state) => state.setSelectedTemplateId,
+  );
+  const versionName = useResumeStore((state) => state.builderVersionName);
+  const setVersionName = useResumeStore((state) => state.setBuilderVersionName);
+  const jobDescription = useResumeStore((state) => state.builderJobDescription);
+  const setJobDescription = useResumeStore(
+    (state) => state.setBuilderJobDescription,
+  );
+  const experienceText = useResumeStore((state) => state.builderExperienceText);
+  const setExperienceText = useResumeStore(
+    (state) => state.setBuilderExperienceText,
+  );
+  const activeTab = useResumeStore((state) => state.builderTab);
+  const setActiveTab = useResumeStore((state) => state.setBuilderTab);
 
-  // Right-column tab switcher: 'edit' or 'preview'
-  const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
-  // Copy to clipboard state feedback index
+  // Copy to clipboard state feedback index (ephemeral — not persisted).
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   // Single effect: load the templates on mount (Req 5.1).
@@ -434,7 +447,7 @@ export function ResumeBuilderPage(): JSX.Element {
 
           {/* Card 2: Select Template */}
           <Panel aria-label="Select Template" title="Select Template">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={(): void => handleSelectTemplate('entry')}
@@ -688,22 +701,23 @@ export function ResumeBuilderPage(): JSX.Element {
                   ) : (
                     /* PDF Document Preview layout */
                     <div className="flex flex-col gap-4 flex-1">
-                      <div className="flex justify-between items-center bg-gray-100 p-2.5 rounded-xl border border-gray-200 no-print">
-                        <span className="text-xs text-muted font-medium">PDF Print Preview (US Letter)</span>
-                        <button
-                          type="button"
-                          onClick={(): void => window.print()}
-                          className="inline-flex items-center gap-1.5 bg-ink text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-ink/90 transition-colors"
-                        >
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
-                            <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-                            <rect x="6" y="14" width="12" height="8" />
-                          </svg>
-                          Print / Save as PDF
-                        </button>
-                      </div>
-
-                      <div className="print-resume-page bg-white shadow-sm border border-gray-300 w-full max-w-[800px] mx-auto p-10 font-serif text-gray-800 aspect-[8.5/11] flex flex-col justify-between overflow-hidden">
+                      <ResumeDocumentFrame
+                        toolbarLeft={<DocumentPageNav page={1} total={1} />}
+                        toolbarRight={
+                          <button
+                            type="button"
+                            onClick={(): void => window.print()}
+                            className="inline-flex items-center gap-1.5 bg-ink text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-ink/90 transition-colors"
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
+                              <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                              <rect x="6" y="14" width="12" height="8" />
+                            </svg>
+                            Print / Save as PDF
+                          </button>
+                        }
+                      >
+                        <div className="print-resume-page bg-white shadow-sm border border-gray-300 w-full p-10 font-serif text-gray-800 aspect-[8.5/11] flex flex-col justify-between overflow-hidden">
                         {/* Header contact */}
                         <div className="text-center border-b border-gray-300 pb-3 mb-5">
                           <h1 className="text-2xl font-bold text-gray-900 tracking-wide uppercase font-sans">
@@ -808,6 +822,7 @@ export function ResumeBuilderPage(): JSX.Element {
                           StayQualifAI Premium ATS Document
                         </div>
                       </div>
+                      </ResumeDocumentFrame>
                     </div>
                   )}
                 </>

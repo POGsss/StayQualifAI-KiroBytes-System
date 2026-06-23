@@ -73,7 +73,7 @@ export function BauhausShapeOne({
     <img
       src={ASSETS.heroShapeOne}
       alt=""
-      className={`w-[520px] object-contain ${className ?? ''}`}
+      className={`w-full max-w-[520px] object-contain ${className ?? ''}`}
     />
   );
 }
@@ -88,7 +88,7 @@ export function BauhausShapeTwo({
     <img
       src={ASSETS.heroShapeTwo}
       alt=""
-      className={`w-[520px] object-contain ${className ?? ''}`}
+      className={`w-full max-w-[520px] object-contain ${className ?? ''}`}
     />
   );
 }
