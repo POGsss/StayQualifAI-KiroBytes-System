@@ -277,6 +277,14 @@ export async function getScorecard(sessionId: string): Promise<IPerformanceScore
   );
 }
 
+/** POST `/sessions/:id/end` — force-end an active session, filling unanswered questions with "I don't know". */
+export async function forceEndSession(sessionId: string): Promise<IInterviewSessionDetail> {
+  return sendJson<IInterviewSessionDetail>(
+    `/sessions/${encodeURIComponent(sessionId)}/end`,
+    'POST',
+  );
+}
+
 // ---------------------------------------------------------------------------
 // STAR story endpoints — `/api/v1/interview/stories/*`.
 // ---------------------------------------------------------------------------

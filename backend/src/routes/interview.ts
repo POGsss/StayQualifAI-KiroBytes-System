@@ -29,6 +29,7 @@ import {
   deleteSessionHandler,
   deleteStoryHandler,
   evaluateAnswerHandler,
+  forceEndSessionHandler,
   getScorecardHandler,
   getSessionHandler,
   getStoryHandler,
@@ -125,6 +126,15 @@ export function createInterviewRouter(): Router {
     requireAuth,
     validate({ params: sessionIdParamsSchema }),
     deleteSessionHandler
+  );
+
+  // POST /sessions/:id/end — force-end an active session (fills unanswered
+  // questions with "I don't know" and transitions to COMPLETED).
+  router.post(
+    '/sessions/:id/end',
+    requireAuth,
+    validate({ params: sessionIdParamsSchema }),
+    forceEndSessionHandler
   );
 
   // --- STAR stories -------------------------------------------------------

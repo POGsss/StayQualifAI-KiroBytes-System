@@ -31,6 +31,7 @@ import {
   deleteSession as deleteSessionRequest,
   deleteStory as deleteStoryRequest,
   evaluateAnswer as evaluateAnswerRequest,
+  forceEndSession as forceEndSessionRequest,
   getScorecard as getScorecardRequest,
   getSession as getSessionRequest,
   getStory as getStoryRequest,
@@ -112,6 +113,7 @@ export interface IInterviewActions {
     input: IUpdateStarInput,
   ) => Promise<IStarStory | null>;
   deleteStory: (id: string) => Promise<boolean>;
+  forceEndSession: (sessionId: string) => Promise<IInterviewSessionDetail | null>;
   clearError: () => void;
   reset: () => void;
 }
@@ -406,6 +408,25 @@ export const useInterviewStore = create<IInterviewStore>((set, get) => ({
 
   clearError: (): void => {
     set({ error: null });
+  },
+
+  forceEndSession: async (
+    sessionId: string,
+  ): Promise<IInterviewSessionDetail | null> => {
+    set({ isLoading: true, error: null });
+    try {
+      const detail = await forceEndSessionRequest(sessionId);
+      set({
+        activeSession: detail,
+        activeQuestions: detail.questions,
+        scorecard: detail.scorecard,
+        isLoading: false,
+      });
+      return detail;
+    } catch (cause) {
+      set({ isLoading: false, error: toStoreError(cause) });
+      return null;
+    }
   },
 
   reset: (): void => {

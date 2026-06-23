@@ -527,6 +527,73 @@ export async function deleteSession(
   }
 }
 
+/**
+ * Force-end an `ACTIVE` session: fill every unanswered question with
+ * `"I don't know"` and `responseLatencySeconds: 0`, then transition the
+ * session to `COMPLETED`. Used when the user presses the "end call" button
+ * mid-interview.
+ *
+ * @param supabase  Per-request, RLS-scoped Supabase client.
+ * @param userId    Owning user id.
+ * @param sessionId The session to force-end.
+ * @returns The full session detail after force-ending.
+ * @throws {NotFoundError} when the session is absent/unowned.
+ * @throws {ValidationError} when the session is not `ACTIVE`.
+ * @throws {InternalError} when persistence or the transition fails.
+ */
+export async function forceEndSession(
+  supabase: SupabaseClient,
+  userId: string,
+  sessionId: string
+): Promise<IInterviewSessionDetail> {
+  const session: IInterviewSession = await loadSession(
+    supabase,
+    userId,
+    sessionId
+  );
+
+  if (session.state !== ANSWERABLE_STATE) {
+    throw new ValidationError(
+      `The session must be active to force-end. Current state: ${session.state}.`,
+      { currentState: session.state }
+    );
+  }
+
+  // Load all questions for this session.
+  const questions: IInterviewQuestion[] = await loadQuestions(
+    supabase,
+    userId,
+    sessionId
+  );
+
+  // Fill every unanswered question with "I don't know".
+  const unanswered = questions.filter((q) => q.answerText === null);
+  for (const q of unanswered) {
+    await persistAnswer(supabase, userId, sessionId, q.id, {
+      answerText: "I don't know",
+      responseLatencySeconds: 0,
+    });
+  }
+
+  // Transition to COMPLETED.
+  const { error: transitionError } = await supabase
+    .from(SESSIONS_TABLE)
+    .update({ state: 'COMPLETED' })
+    .eq('id', sessionId)
+    .eq('user_id', userId)
+    .eq('state', ANSWERABLE_STATE);
+
+  if (transitionError !== null) {
+    throw new InternalError(
+      'The session could not be transitioned to completed.',
+      transitionError.message
+    );
+  }
+
+  // Return the full session detail (now COMPLETED with all questions answered).
+  return getSession(supabase, userId, sessionId);
+}
+
 // ---------------------------------------------------------------------------
 // STAR_Organizer passthroughs
 // ---------------------------------------------------------------------------

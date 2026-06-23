@@ -64,6 +64,8 @@ const MAX_ANSWER_LENGTH = 5000;
 const MIN_QUESTION_COUNT = 5;
 const MAX_QUESTION_COUNT = 15;
 const MAX_JD_LENGTH = 5000;
+/** Silence timeout in ms — auto-submit when user stops talking for this long. */
+const SILENCE_TIMEOUT_MS = 2000;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared Tailwind helpers (Bauhaus tokens — no purple)
@@ -316,12 +318,90 @@ function CallControls({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Interview status banner (visual indicator for the voice-driven flow)
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface IStatusBannerProps {
+  isActiveSession: boolean;
+  isCompleted: boolean;
+  isSpeaking: boolean;
+  isListening: boolean;
+  isSubmitting: boolean;
+}
+
+function InterviewStatusBanner({
+  isActiveSession,
+  isCompleted,
+  isSpeaking,
+  isListening,
+  isSubmitting,
+}: IStatusBannerProps): JSX.Element | null {
+  if (!isActiveSession) return null;
+
+  let icon: string;
+  let text: string;
+  let bgClass: string;
+  let animClass: string;
+
+  if (isCompleted) {
+    icon = '✅';
+    text = 'Interview complete — view your results below';
+    bgClass = 'bg-emerald-50 border-emerald-200 text-emerald-700';
+    animClass = '';
+  } else if (isSpeaking) {
+    icon = '🔊';
+    text = 'AI Interviewer is speaking — please listen...';
+    bgClass = 'bg-blue-50 border-accent-blue/30 text-accent-blue';
+    animClass = 'animate-pulse';
+  } else if (isSubmitting) {
+    icon = '⏳';
+    text = 'Processing your answer...';
+    bgClass = 'bg-amber-50 border-amber-200 text-amber-700';
+    animClass = 'animate-pulse';
+  } else if (isListening) {
+    icon = '🎙️';
+    text = 'Your turn — speak now (auto-submits after 2s silence)';
+    bgClass = 'bg-green-50 border-green-200 text-green-700';
+    animClass = '';
+  } else {
+    icon = '⏸️';
+    text = 'Waiting...';
+    bgClass = 'bg-gray-50 border-gray-200 text-gray-500';
+    animClass = '';
+  }
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className={[
+        'flex items-center justify-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium transition-all',
+        bgClass,
+        animClass,
+      ].join(' ')}
+    >
+      <span className="text-lg" aria-hidden="true">{icon}</span>
+      <span>{text}</span>
+      {isListening && (
+        <span className="flex gap-1" aria-hidden="true">
+          <span className="inline-block h-2 w-2 rounded-full bg-green-500 animate-bounce [animation-delay:0ms]" />
+          <span className="inline-block h-2 w-2 rounded-full bg-green-500 animate-bounce [animation-delay:150ms]" />
+          <span className="inline-block h-2 w-2 rounded-full bg-green-500 animate-bounce [animation-delay:300ms]" />
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Interview stage (top workspace: participants + call controls)
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface IInterviewStageProps {
   title: string;
   isActiveSession: boolean;
+  isCompleted: boolean;
+  isSubmitting: boolean;
   answeredCount: number;
   totalCount: number;
   isAISpeaking: boolean;
@@ -332,6 +412,8 @@ interface IInterviewStageProps {
 function InterviewStage({
   title,
   isActiveSession,
+  isCompleted,
+  isSubmitting,
   answeredCount,
   totalCount,
   isAISpeaking,
@@ -368,7 +450,16 @@ function InterviewStage({
         )}
       </div>
 
-      <div className="rounded-2xl bg-[#ddd] p-3 sm:p-4">
+      {/* Status banner — shows what's happening (AI speaking / your turn / etc) */}
+      <InterviewStatusBanner
+        isActiveSession={isActiveSession}
+        isCompleted={isCompleted}
+        isSpeaking={isAISpeaking}
+        isListening={isListening}
+        isSubmitting={isSubmitting}
+      />
+
+      <div className="mt-4 rounded-2xl bg-[#ddd] p-3 sm:p-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <ParticipantCard
             name="AI Interviewer"
@@ -796,6 +887,7 @@ export function InterviewChatPage(): JSX.Element {
     openSession,
     startSession,
     submitAnswer,
+    forceEndSession,
     clearError,
     reset,
   } = useInterviewStore();
@@ -808,6 +900,7 @@ export function InterviewChatPage(): JSX.Element {
   const [answerDraft, setAnswerDraft] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [setupError, setSetupError] = useState<string | null>(null);
+  const [isEndingSession, setIsEndingSession] = useState<boolean>(false);
 
   // Per-question presentation timestamps (for latency scoring).
   const presentedAtMap = useRef<Map<string, number>>(new Map());
@@ -815,10 +908,64 @@ export function InterviewChatPage(): JSX.Element {
   // True while we are waiting for the spoken question to finish before listening.
   const pendingAutoListenRef = useRef<boolean>(false);
   const prevSpeakingRef = useRef<boolean>(false);
+  // Silence detection timer ref.
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Ref to track whether an auto-submit is already in progress.
+  const autoSubmitInProgressRef = useRef<boolean>(false);
+  // Ref mirror of answerDraft for async access in silence timeout handler.
+  const answerDraftRef = useRef<string>('');
+
+  // Keep the ref in sync with state.
+  useEffect(() => {
+    answerDraftRef.current = answerDraft;
+  }, [answerDraft]);
 
   // ── Derive thread from store questions ────────────────────────────────────
   const { messages, currentQuestion, answeredCount, totalCount } =
     deriveChatThread(activeQuestions);
+
+  // ── Helper: clear silence timer ───────────────────────────────────────────
+  const clearSilenceTimer = (): void => {
+    if (silenceTimerRef.current !== null) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+  };
+
+  // ── Helper: internal answer submission (used by both manual & auto) ───────
+  const submitCurrentAnswer = async (answerText: string): Promise<void> => {
+    if (currentQuestion === null || activeSession === null) return;
+    if (isSubmitting || autoSubmitInProgressRef.current) return;
+
+    const trimmed = answerText.trim();
+    if (trimmed.length === 0 || trimmed.length > MAX_ANSWER_LENGTH) return;
+
+    autoSubmitInProgressRef.current = true;
+    setIsSubmitting(true);
+    clearSilenceTimer();
+
+    // Stop any capture/playback before submitting.
+    if (recognition.isListening) recognition.stopListening();
+    if (synthesis.isSpeaking) synthesis.cancel();
+    pendingAutoListenRef.current = false;
+
+    const presentedAt = presentedAtMap.current.get(currentQuestion.id);
+    const responseLatencySeconds = computeResponseLatencySeconds(presentedAt, Date.now());
+
+    const updated = await submitAnswer(activeSession.id, currentQuestion.id, {
+      answerText: trimmed,
+      responseLatencySeconds,
+    });
+
+    // When the final answer is submitted, re-open the session so its
+    // lifecycle state advances to COMPLETED and the scorecard appears.
+    if (updated !== null && answeredCount + 1 >= totalCount) {
+      await openSession(activeSession.id);
+    }
+
+    setIsSubmitting(false);
+    autoSubmitInProgressRef.current = false;
+  };
 
   // ── Mirror the live transcript into the editable draft ────────────────────
   useEffect(() => {
@@ -826,6 +973,35 @@ export function InterviewChatPage(): JSX.Element {
       setAnswerDraft(recognition.transcript);
     }
   }, [recognition.transcript]);
+
+  // ── Silence detection: reset timer on every transcript change ─────────────
+  useEffect(() => {
+    // Only run when actively listening and there is a transcript.
+    if (!recognition.isListening || recognition.transcript.trim().length === 0) {
+      clearSilenceTimer();
+      return;
+    }
+
+    // Reset the silence timer every time the transcript changes.
+    clearSilenceTimer();
+    silenceTimerRef.current = setTimeout(() => {
+      // 2 seconds of silence — auto-submit the current draft.
+      const draft = answerDraftRef.current.trim();
+      if (
+        draft.length > 0 &&
+        !autoSubmitInProgressRef.current &&
+        currentQuestion !== null &&
+        activeSession !== null
+      ) {
+        void submitCurrentAnswer(draft);
+      }
+    }, SILENCE_TIMEOUT_MS);
+
+    return () => {
+      clearSilenceTimer();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recognition.transcript, recognition.isListening]);
 
   // ── On a new current question: stamp time, speak it, then auto-listen ─────
   useEffect(() => {
@@ -842,6 +1018,7 @@ export function InterviewChatPage(): JSX.Element {
     // Reset answer surfaces for the new question.
     recognition.clearTranscript();
     setAnswerDraft('');
+    clearSilenceTimer();
 
     if (synthesis.isSupported) {
       // Speak the question; auto-start the mic once playback finishes.
@@ -870,6 +1047,13 @@ export function InterviewChatPage(): JSX.Element {
       recognition.startListening();
     }
   }, [synthesis.isSpeaking, recognition]);
+
+  // ── Cleanup silence timer on unmount ──────────────────────────────────────
+  useEffect(() => {
+    return () => {
+      clearSilenceTimer();
+    };
+  }, []);
 
   // ── Setup submit handler ──────────────────────────────────────────────────
   const handleSetupSubmit = async (params: {
@@ -916,47 +1100,20 @@ export function InterviewChatPage(): JSX.Element {
     presentedAtMap.current.clear();
     prevQuestionIdRef.current = null;
     pendingAutoListenRef.current = false;
+    clearSilenceTimer();
     setAnswerDraft('');
   };
 
-  // ── Answer submit handler ─────────────────────────────────────────────────
+  // ── Answer submit handler (manual button press) ───────────────────────────
   const handleSend = async (): Promise<void> => {
-    if (currentQuestion === null || activeSession === null) return;
-    if (isSubmitting) return;
-
-    const answerText = answerDraft.trim();
-    if (answerText.length === 0 || answerText.length > MAX_ANSWER_LENGTH) return;
-
-    setIsSubmitting(true);
-
-    // Stop any capture/playback before submitting.
-    if (recognition.isListening) recognition.stopListening();
-    if (synthesis.isSpeaking) synthesis.cancel();
-    pendingAutoListenRef.current = false;
-
-    const presentedAt = presentedAtMap.current.get(currentQuestion.id);
-    const responseLatencySeconds = computeResponseLatencySeconds(presentedAt, Date.now());
-
-    const updated = await submitAnswer(activeSession.id, currentQuestion.id, {
-      answerText,
-      responseLatencySeconds,
-    });
-
-    // When the final answer is submitted the question list has no more
-    // unanswered questions, but the store leaves session.state untouched.
-    // Re-open the session so its lifecycle state advances to COMPLETED and the
-    // scorecard appears.
-    if (updated !== null && answeredCount + 1 >= totalCount) {
-      await openSession(activeSession.id);
-    }
-
-    setIsSubmitting(false);
+    await submitCurrentAnswer(answerDraft);
   };
 
   // ── Mic + playback controls ───────────────────────────────────────────────
   const handleMicToggle = (): void => {
     if (recognition.isListening) {
       recognition.stopListening();
+      clearSilenceTimer();
     } else {
       recognition.startListening();
     }
@@ -965,18 +1122,37 @@ export function InterviewChatPage(): JSX.Element {
   const handleReplay = (): void => {
     if (currentQuestion !== null && synthesis.isSupported) {
       pendingAutoListenRef.current = false;
+      clearSilenceTimer();
       synthesis.speak(currentQuestion.text);
     }
   };
 
-  const handleEndSession = (): void => {
+  const handleEndSession = async (): Promise<void> => {
+    if (activeSession === null) return;
+    if (isEndingSession) return;
+
+    setIsEndingSession(true);
+
+    // Stop all audio activity.
     if (recognition.isListening) recognition.stopListening();
     if (synthesis.isSpeaking) synthesis.cancel();
-    presentedAtMap.current.clear();
-    prevQuestionIdRef.current = null;
+    clearSilenceTimer();
     pendingAutoListenRef.current = false;
-    setAnswerDraft('');
-    reset();
+
+    // Force-end the session on the backend — fills unanswered questions
+    // with "I don't know" and transitions to COMPLETED.
+    const result = await forceEndSession(activeSession.id);
+
+    if (result === null) {
+      // If the backend call failed (session may not be ACTIVE anymore),
+      // just reset local state.
+      presentedAtMap.current.clear();
+      prevQuestionIdRef.current = null;
+      setAnswerDraft('');
+      reset();
+    }
+
+    setIsEndingSession(false);
   };
 
   // ── Session state shortcuts ───────────────────────────────────────────────
@@ -997,11 +1173,11 @@ export function InterviewChatPage(): JSX.Element {
     isListening: recognition.isListening,
     micDisabled:
       !showAnswerPanel || synthesis.isSpeaking || isSubmitting || !recognition.isSupported,
-    endDisabled: !isActiveSession,
+    endDisabled: !isActiveSession || isCompleted || isEndingSession,
     replayDisabled: currentQuestion === null || synthesis.isSpeaking,
     isTtsSupported: synthesis.isSupported,
     onMicToggle: handleMicToggle,
-    onEndCall: handleEndSession,
+    onEndCall: () => { void handleEndSession(); },
     onReplay: handleReplay,
   };
 
@@ -1038,6 +1214,8 @@ export function InterviewChatPage(): JSX.Element {
       <InterviewStage
         title={stageTitle}
         isActiveSession={isActiveSession}
+        isCompleted={isCompleted}
+        isSubmitting={isSubmitting}
         answeredCount={answeredCount}
         totalCount={totalCount}
         isAISpeaking={synthesis.isSpeaking}

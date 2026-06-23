@@ -41,6 +41,7 @@ import {
   deleteSession,
   deleteStory,
   evaluateAnswer,
+  forceEndSession,
   getSession,
   getStory,
   listSessions,
@@ -329,6 +330,26 @@ export const getScorecardHandler: RequestHandler = asyncHandler(
     const sessionId = requireParam(req, 'id');
 
     const result: IPerformanceScorecard = await computeScorecard(
+      supabase,
+      userId,
+      sessionId
+    );
+    res.status(200).json(singleEnvelope(result));
+  }
+);
+
+/**
+ * `POST /sessions/:id/end` — force-end an active session. All unanswered
+ * questions are filled with "I don't know" and the session transitions to
+ * `COMPLETED`. Returns the full session detail (single-resource envelope).
+ */
+export const forceEndSessionHandler: RequestHandler = asyncHandler(
+  async (req, res) => {
+    const supabase = requireSupabase(req);
+    const userId = requireUserId(req);
+    const sessionId = requireParam(req, 'id');
+
+    const result: IInterviewSessionDetail = await forceEndSession(
       supabase,
       userId,
       sessionId
