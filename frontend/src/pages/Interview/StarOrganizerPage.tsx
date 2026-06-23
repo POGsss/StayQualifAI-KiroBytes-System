@@ -4,6 +4,7 @@ import type { FormEvent, JSX } from 'react';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { Panel } from '../../components/Panel';
+import { Textarea } from '../../components/Textarea';
 import { SkeletonList } from '../../components/Skeleton';
 import { useInterviewStore } from '../../stores/interview.store';
 import type {
@@ -77,11 +78,6 @@ function formatTimestamp(iso: string): string {
   }
   return date.toLocaleString();
 }
-
-const TEXTAREA_CLASS =
-  'w-full rounded-[10px] border border-gray-200 bg-canvas px-4 py-2.5 text-sm text-ink ' +
-  'placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 ' +
-  'focus-visible:ring-bauhaus-blue/40 disabled:cursor-not-allowed disabled:opacity-50';
 
 export function StarOrganizerPage(): JSX.Element {
   const stories = useInterviewStore((state) => state.stories);
@@ -212,15 +208,11 @@ export function StarOrganizerPage(): JSX.Element {
         >
           {/* Title field */}
           <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="create-title"
-              className="text-sm font-semibold text-muted"
-            >
-              Title
-            </label>
             <Input
               id="create-title"
               type="text"
+              placeholder="Title"
+              aria-label="Title"
               maxLength={TITLE_MAX}
               value={createFields.title}
               onChange={(event): void =>
@@ -243,15 +235,11 @@ export function StarOrganizerPage(): JSX.Element {
             const hintId = `${fieldId}-hint`;
             return (
               <div key={key} className="flex flex-col gap-1.5">
-                <label
-                  htmlFor={fieldId}
-                  className="text-sm font-semibold text-muted"
-                >
-                  {label}
-                </label>
-                <textarea
+                <Textarea
                   id={fieldId}
                   rows={3}
+                  placeholder={label}
+                  aria-label={label}
                   maxLength={STAR_FIELD_MAX}
                   value={createFields[key]}
                   onChange={(event): void =>
@@ -262,7 +250,6 @@ export function StarOrganizerPage(): JSX.Element {
                   }
                   disabled={isLoading}
                   aria-describedby={hintId}
-                  className={TEXTAREA_CLASS}
                 />
                 <span id={hintId} className="text-xs text-muted">
                   {createFields[key].trim().length}/{STAR_FIELD_MAX} characters
@@ -461,15 +448,11 @@ function StarEditForm({
       className="mt-4 flex flex-col gap-4 border-t border-gray-200 pt-4"
     >
       <div className="flex flex-col gap-1.5">
-        <label
-          htmlFor="edit-title"
-          className="text-sm font-semibold text-muted"
-        >
-          Title
-        </label>
         <Input
           id="edit-title"
           type="text"
+          placeholder="Title"
+          aria-label="Title"
           maxLength={TITLE_MAX}
           value={fields.title}
           onChange={(event): void =>
@@ -488,15 +471,11 @@ function StarEditForm({
         const hintId = `${fieldId}-hint`;
         return (
           <div key={key} className="flex flex-col gap-1.5">
-            <label
-              htmlFor={fieldId}
-              className="text-sm font-semibold text-muted"
-            >
-              {label}
-            </label>
-            <textarea
+            <Textarea
               id={fieldId}
               rows={3}
+              placeholder={label}
+              aria-label={label}
               maxLength={STAR_FIELD_MAX}
               value={fields[key]}
               onChange={(event): void =>
@@ -504,7 +483,6 @@ function StarEditForm({
               }
               disabled={isLoading}
               aria-describedby={hintId}
-              className={TEXTAREA_CLASS}
             />
             <span id={hintId} className="text-xs text-muted">
               {fields[key].trim().length}/{STAR_FIELD_MAX} characters

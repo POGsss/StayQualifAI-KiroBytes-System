@@ -19,7 +19,8 @@ import type { AiContentType } from '../../stores/jobsearch.store';
  * copy-to-clipboard support.
  *
  * Accessibility:
- * - All inputs have associated `<label>` elements
+ * - Placeholder-only fields carry an `aria-label` (no visible label, matching
+ *   the Upskilling search-filter layout)
  * - Error alert is dismissible with a close button
  * - Loading state disables the Generate button and shows a spinner
  */
@@ -77,120 +78,79 @@ export function AiWriterTab(): JSX.Element {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Form panel */}
+      {/* Generator toolbar — mirrors the Upskilling search-filter layout:
+          placeholder-only fields with the action button on the same line. */}
       <Panel title="AI Content Generator">
         <div className="flex flex-col gap-4">
-          {/* Application selector */}
-          <div className="flex flex-col gap-1">
-            <label
-              htmlFor="ai-application-select"
-              className="text-sm font-medium text-muted"
-            >
-              Application
-            </label>
+          <div className="grid items-center gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto]">
             <Select
-              id="ai-application-select"
+              aria-label="Application"
               value={selectedApplicationId}
               onChange={(e) => setSelectedApplicationId(e.target.value)}
               disabled={isLoading}
               options={appOptions}
             />
+
+            <Select
+              aria-label="Content type"
+              value={contentType}
+              onChange={(e) => setContentType(e.target.value as AiContentType)}
+              disabled={isLoading}
+              options={CONTENT_TYPES.map((type) => ({
+                value: type.id,
+                label: type.label,
+              }))}
+            />
+
+            <Button type="button" onClick={handleGenerate} disabled={!canGenerate}>
+              {isLoading && (
+                <svg
+                  className="h-4 w-4 animate-spin mr-2"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+              )}
+              {isLoading ? 'Generating…' : 'Generate'}
+            </Button>
           </div>
 
-          {/* Content type selector */}
-          <fieldset className="flex flex-col gap-1">
-            <legend className="text-sm font-medium text-muted">Content Type</legend>
-            <div className="mt-1 flex flex-wrap gap-4">
-              {CONTENT_TYPES.map((type) => (
-                <label
-                  key={type.id}
-                  className="flex items-center gap-2 text-sm text-ink cursor-pointer"
-                >
-                  <input
-                    type="radio"
-                    name="ai-content-type"
-                    value={type.id}
-                    checked={contentType === type.id}
-                    onChange={() => setContentType(type.id)}
-                    disabled={isLoading}
-                    className="h-4 w-4 border-gray-300 text-accent-blue focus:ring-accent-blue/40"
-                  />
-                  {type.label}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          {/* LinkedIn-specific fields */}
+          {/* LinkedIn-specific fields — placeholder-only, no labels */}
           {contentType === 'linkedin-outreach' && (
-            <div className="flex flex-col gap-4 rounded-[10px] border border-gray-200 bg-canvas p-4">
-              <div className="flex flex-col gap-1">
-                <label
-                  htmlFor="ai-recipient-name"
-                  className="text-sm font-medium text-muted"
-                >
-                  Recipient Name <span className="text-gray-400">(optional)</span>
-                </label>
-                <Input
-                  id="ai-recipient-name"
-                  type="text"
-                  value={recipientName}
-                  onChange={(e) => setRecipientName(e.target.value)}
-                  disabled={isLoading}
-                  placeholder="e.g. Jane Smith"
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label
-                  htmlFor="ai-recipient-role"
-                  className="text-sm font-medium text-muted"
-                >
-                  Recipient Role <span className="text-gray-400">(optional)</span>
-                </label>
-                <Input
-                  id="ai-recipient-role"
-                  type="text"
-                  value={recipientRole}
-                  onChange={(e) => setRecipientRole(e.target.value)}
-                  disabled={isLoading}
-                  placeholder="e.g. Hiring Manager"
-                />
-              </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input
+                type="text"
+                aria-label="Recipient name (optional)"
+                value={recipientName}
+                onChange={(e) => setRecipientName(e.target.value)}
+                disabled={isLoading}
+                placeholder="Recipient name (optional)"
+              />
+              <Input
+                type="text"
+                aria-label="Recipient role (optional)"
+                value={recipientRole}
+                onChange={(e) => setRecipientRole(e.target.value)}
+                disabled={isLoading}
+                placeholder="Recipient role (optional)"
+              />
             </div>
           )}
-
-          {/* Generate button */}
-          <Button
-            type="button"
-            onClick={handleGenerate}
-            disabled={!canGenerate}
-            className="self-start"
-          >
-            {isLoading && (
-              <svg
-                className="h-4 w-4 animate-spin mr-2"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                />
-              </svg>
-            )}
-            {isLoading ? 'Generating…' : 'Generate'}
-          </Button>
         </div>
       </Panel>
 

@@ -79,14 +79,30 @@ export function useSpeechSynthesis(): IUseSpeechSynthesis {
   // closure value (Req 4.3).
   const isSpeakingRef = useRef<boolean>(false);
 
+  // Watchdog interval that reconciles our `isSpeaking` state with the browser's
+  // authoritative `speechSynthesis.speaking`/`.pending` flags. Chrome
+  // intermittently fails to fire `onend` (especially for the first utterance or
+  // when the tab loses focus), which previously left `isSpeaking` stuck `true`
+  // — disabling the mic until the user switched tabs. Polling guarantees the
+  // state clears so the candidate can answer immediately.
+  const watchdogRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const clearWatchdog = useCallback((): void => {
+    if (watchdogRef.current !== null) {
+      clearInterval(watchdogRef.current);
+      watchdogRef.current = null;
+    }
+  }, []);
+
   // ── Internal cancel ───────────────────────────────────────────────────────
 
   const cancelInternal = useCallback((): void => {
+    clearWatchdog();
     if (!isSpeechSynthesisSupported()) return;
     window.speechSynthesis.cancel();
     isSpeakingRef.current = false;
     setIsSpeaking(false);
-  }, []);
+  }, [clearWatchdog]);
 
   // ── speak ─────────────────────────────────────────────────────────────────
 
@@ -115,6 +131,31 @@ export function useSpeechSynthesis(): IUseSpeechSynthesis {
       isSpeakingRef.current = true;
       setIsSpeaking(true);
 
+      // Start the watchdog: once the browser reports it is neither speaking nor
+      // pending, clear our state even if `onend` never fired.
+      clearWatchdog();
+      watchdogRef.current = setInterval(() => {
+        if (!isSpeechSynthesisSupported()) {
+          clearWatchdog();
+          return;
+        }
+        const synth = window.speechSynthesis;
+        // Chrome bug: speechSynthesis silently pauses itself (most often right
+        // after the first utterance, or when the tab briefly loses focus),
+        // leaving the utterance stuck "pending" so `onend` never fires. That
+        // previously kept `isSpeaking` true and blocked the mic until the user
+        // switched tabs and back. Nudging `resume()` un-sticks playback in
+        // place — no tab switch required.
+        if (isSpeakingRef.current && synth.paused) {
+          synth.resume();
+        }
+        if (isSpeakingRef.current && !synth.speaking && !synth.pending) {
+          isSpeakingRef.current = false;
+          setIsSpeaking(false);
+          clearWatchdog();
+        }
+      }, 250);
+
       // Build SpeechSynthesisUtterance objects for all chunks up-front so the
       // chaining closures below capture stable references.
       const utterances = chunks.map((chunk) => new SpeechSynthesisUtterance(chunk));
@@ -130,6 +171,7 @@ export function useSpeechSynthesis(): IUseSpeechSynthesis {
             // All chunks finished — clear speaking state.
             isSpeakingRef.current = false;
             setIsSpeaking(false);
+            clearWatchdog();
           }
         };
 
@@ -138,6 +180,7 @@ export function useSpeechSynthesis(): IUseSpeechSynthesis {
           // failed" while keeping the caption visible (Req 4.7).
           isSpeakingRef.current = false;
           setIsSpeaking(false);
+          clearWatchdog();
           setError(`Speech synthesis error: ${event.error}`);
         };
       });
@@ -150,7 +193,7 @@ export function useSpeechSynthesis(): IUseSpeechSynthesis {
         window.speechSynthesis.speak(firstUtterance);
       }
     },
-    [cancelInternal],
+    [cancelInternal, clearWatchdog],
   );
 
   // ── cancel (public) ───────────────────────────────────────────────────────
@@ -163,11 +206,12 @@ export function useSpeechSynthesis(): IUseSpeechSynthesis {
 
   useEffect(() => {
     return (): void => {
+      clearWatchdog();
       if (isSpeechSynthesisSupported()) {
         window.speechSynthesis.cancel();
       }
     };
-  }, []);
+  }, [clearWatchdog]);
 
   // ── Return ────────────────────────────────────────────────────────────────
 

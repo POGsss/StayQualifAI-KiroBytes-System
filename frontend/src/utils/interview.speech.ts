@@ -23,6 +23,7 @@ import type { ISpeechState, SpeechEvent } from '../types/interview.types';
  *   result → append finalChunk (exactly once) to finalText; replace interimText
  *   end    → preserve full state (auto-restart boundary; hook responsibility)
  *   stop   → flush interimText into finalText; set capturing false
+ *   reset  → clear all accumulated transcript (used when a new question starts)
  *
  * Never loses or duplicates a finalized segment (Requirements 5.5, 5.6, 5.7, 5.8).
  */
@@ -51,6 +52,16 @@ export function speechReducer(
       // and mark capture as intentionally stopped.
       return {
         finalText: state.finalText + state.interimText,
+        interimText: '',
+        capturing: false,
+      };
+
+    case 'reset':
+      // Hard-clear the accumulated transcript so the next question starts
+      // from a clean slate (prevents the previous answer leaking into the
+      // current one).
+      return {
+        finalText: '',
         interimText: '',
         capturing: false,
       };

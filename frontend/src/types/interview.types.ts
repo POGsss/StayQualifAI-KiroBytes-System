@@ -176,7 +176,8 @@ export type SpeechEvent =
   | { kind: 'start' }
   | { kind: 'result'; finalChunk: string | null; interim: string }
   | { kind: 'end' } // session ended (may auto-restart if still capturing)
-  | { kind: 'stop' }; // user stopped → flush interim, no restart
+  | { kind: 'stop' } // user stopped → flush interim, no restart
+  | { kind: 'reset' }; // clear all accumulated transcript (new question)
 
 /** Microphone permission state derived from prompt/onerror (Req 9). */
 export type SpeechPermission = 'unknown' | 'granted' | 'denied' | 'dismissed';

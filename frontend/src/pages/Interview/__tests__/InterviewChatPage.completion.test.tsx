@@ -17,6 +17,12 @@ import { render, screen, waitFor, act, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+// ── Mock react-router-dom's useNavigate (page calls it; no Router in tests) ──
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-router-dom')>();
+  return { ...actual, useNavigate: () => vi.fn() };
+});
+
 // ── Mock ScoreDial & TierBadge ────────────────────────────────────────────
 
 vi.mock('../../../components/ScoreDial', () => ({

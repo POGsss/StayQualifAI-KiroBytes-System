@@ -349,42 +349,16 @@ export function useSpeechRecognition(
   // ── clearTranscript ───────────────────────────────────────────────────────
 
   const clearTranscript = useCallback((): void => {
-    // speechReducer has no 'clear' event, so we can't directly reset its state.
-    // Strategy: flush any outstanding interim via 'stop', then record the new
-    // finalText length as a cleared offset. The derived visible transcript is
-    // computed as state.finalText.slice(clearedOffset) + state.interimText,
-    // so everything accumulated before the clear is invisible to the consumer.
-    // clearPendingRef ensures we snapshot the offset after the dispatch commits.
-    dispatch({ kind: 'stop' });
-    clearPendingRef.current = true;
+    // Hard-reset the reducer so the next question starts from an empty
+    // transcript. This prevents the previous answer from being appended to
+    // (concatenated with) the current spoken answer.
+    dispatch({ kind: 'reset' });
   }, []);
 
-  /**
-   * When true, the next render should snapshot the post-stop finalText as the
-   * new zero-baseline (cleared offset).
-   */
-  const clearPendingRef = useRef<boolean>(false);
+  // Derive the visible transcript directly from the reducer state.
+  const visibleTranscript = state.finalText + state.interimText;
 
-  /**
-   * The character offset into state.finalText that represents "the beginning"
-   * after the last clearTranscript() call. Everything before this offset is
-   * excluded from the derived transcript.
-   */
-  const clearedOffsetRef = useRef<number>(0);
-
-  // Derive the visible transcript, accounting for cleared offsets
-  const visibleTranscript = state.finalText.slice(clearedOffsetRef.current) + state.interimText;
-
-  // After a clear, once state.capturing becomes false and interimText is '',
-  // snapshot the new baseline so future final chunks start from zero.
-  useEffect(() => {
-    if (clearPendingRef.current && !state.capturing && state.interimText === '') {
-      clearedOffsetRef.current = state.finalText.length;
-      clearPendingRef.current = false;
-    }
-  }, [state.capturing, state.finalText, state.interimText]);
-
-  // Sync transcriptRef to the visible transcript (not the raw one)
+  // Sync transcriptRef to the visible transcript for synchronous read-at-send.
   useEffect(() => {
     transcriptRef.current = visibleTranscript;
   }, [visibleTranscript]);

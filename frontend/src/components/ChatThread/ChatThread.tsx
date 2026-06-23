@@ -12,6 +12,12 @@ export interface IChatThreadProps {
    * to assistive technology (Req 10.5). Defaults to "Interview conversation".
    */
   liveRegionLabel?: string;
+  /**
+   * In-progress spoken answer for the current question. When non-null/non-empty
+   * it is rendered as a pending "You" bubble at the bottom of the thread so the
+   * transcript appears in real time as the candidate talks.
+   */
+  liveAnswer?: string | null;
 }
 
 /**
@@ -31,16 +37,20 @@ export interface IChatThreadProps {
 export function ChatThread({
   messages,
   liveRegionLabel = 'Interview conversation',
+  liveAnswer = null,
 }: IChatThreadProps): JSX.Element {
   // Sentinel element at the bottom; scrolled into view on each new message.
   const bottomRef = useRef<HTMLDivElement>(null);
   // The last message in the thread, used to populate the ARIA live region.
   const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
 
-  // Autoscroll whenever messages change (Req 2.7).
+  const trimmedLiveAnswer = liveAnswer?.trim() ?? '';
+  const hasLiveAnswer = trimmedLiveAnswer.length > 0;
+
+  // Autoscroll whenever messages change or the live answer grows (Req 2.7).
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, liveAnswer]);
 
   return (
     <div className="relative flex flex-col gap-1">
@@ -54,6 +64,25 @@ export function ChatThread({
         {messages.map((msg) => (
           <ChatMessage key={msg.id} message={msg} />
         ))}
+
+        {/* Live, in-progress answer — rendered as a pending "You" bubble */}
+        {hasLiveAnswer && (
+          <div className="flex w-full justify-end" data-testid="chat-message-live">
+            <div className="flex max-w-[80%] flex-col items-end gap-1">
+              <span className="flex items-center gap-1.5 text-xs font-medium text-muted">
+                You
+                <span className="inline-flex gap-0.5" aria-hidden="true">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent-blue animate-bounce [animation-delay:0ms]" />
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent-blue animate-bounce [animation-delay:150ms]" />
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent-blue animate-bounce [animation-delay:300ms]" />
+                </span>
+              </span>
+              <p className="rounded-2xl bg-accent-blue/80 px-4 py-3 text-sm text-white">
+                {trimmedLiveAnswer}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Autoscroll sentinel — scrolled into view on message append */}
         <div ref={bottomRef} aria-hidden="true" />

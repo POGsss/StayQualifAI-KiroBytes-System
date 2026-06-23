@@ -15,6 +15,12 @@
 import { render, screen, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+// ── Mock react-router-dom's useNavigate (page calls it; no Router in tests) ──
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-router-dom')>();
+  return { ...actual, useNavigate: () => vi.fn() };
+});
+
 // ── Store mock ────────────────────────────────────────────────────────────────
 vi.mock('../../../stores/interview.store', () => ({
   useInterviewStore: vi.fn(),

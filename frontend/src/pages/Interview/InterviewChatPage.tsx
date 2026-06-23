@@ -8,7 +8,7 @@
  *   │   ┌───────────────┐        ┌───────────────┐                  │
  *   │   │ AI Interviewer │       │   Candidate    │  (participants)  │
  *   │   └───────────────┘        └───────────────┘                  │
- *   │            ( 🎤   ☎ end   ⚙ )   centered call controls         │
+ *   │            ( mic    end    settings )   centered call controls │
  *   └──────────────────────────────────────────────────────────────┘
  *   ┌────────────────────────────┐  ┌──────────────────────────────┐
  *   │ Interview Setup (left)      │  │ Interview Transcript (right) │
@@ -37,11 +37,24 @@
  */
 
 import { type JSX, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Mic,
+  Square,
+  PhoneOff,
+  Settings as SettingsLucide,
+  RotateCcw,
+  User,
+} from 'lucide-react';
 
 import { ChatThread } from '../../components/ChatThread';
 import { ScoreDial } from '../../components/ScoreDial';
 import { SkeletonCard } from '../../components/Skeleton';
 import { TierBadge } from '../../components/TierBadge';
+import { Button } from '../../components/Button';
+import { Input } from '../../components/Input';
+import { Select } from '../../components/Select';
+import { Textarea } from '../../components/Textarea';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { useSpeechSynthesis } from '../../hooks/useSpeechSynthesis';
 import { useInterviewStore } from '../../stores/interview.store';
@@ -64,8 +77,6 @@ const MAX_ANSWER_LENGTH = 5000;
 const MIN_QUESTION_COUNT = 5;
 const MAX_QUESTION_COUNT = 15;
 const MAX_JD_LENGTH = 5000;
-/** Silence timeout in ms — auto-submit when user stops talking for this long. */
-const SILENCE_TIMEOUT_MS = 2000;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared Tailwind helpers (Bauhaus tokens — no purple)
@@ -85,72 +96,32 @@ const BTN_PRIMARY =
   'focus:outline-none focus:ring-2 focus:ring-primary/50 focus-visible:ring-2 ' +
   'focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50';
 
-// Setup-form fields — Bauhaus "filled" inputs matching the Figma wireframe:
-// soft gray fill, rounded-[15px], no visible border, gray placeholder text.
-const SETUP_INPUT =
-  'w-full rounded-[15px] border border-transparent bg-[#f0f0f0] px-5 py-2.5 text-sm text-ink ' +
-  'placeholder:text-[#1d1d1d]/50 transition-colors ' +
-  'focus:outline-none focus:ring-2 focus:ring-primary/40 ' +
-  'disabled:cursor-not-allowed disabled:opacity-50';
-
-// "Start Interview" CTA — dark pill exactly as in the Figma wireframe.
-const BTN_START =
-  'inline-flex items-center justify-center rounded-[10px] bg-ink px-5 py-2.5 text-sm font-medium ' +
-  'text-white transition-colors hover:bg-ink/90 ' +
-  'focus:outline-none focus:ring-2 focus:ring-ink/40 ' +
-  'disabled:cursor-not-allowed disabled:opacity-50';
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Icons (aria-hidden; accessible names live on the parent control)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function PersonIcon(): JSX.Element {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor" className="h-1/2 w-1/2">
-      <path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6Z" />
-    </svg>
-  );
+  return <User aria-hidden="true" className="h-1/2 w-1/2" />;
 }
 
 function MicIcon(): JSX.Element {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-      <path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4Z" />
-      <path d="M19 11a7 7 0 0 1-14 0H3a9 9 0 0 0 8 8.94V22h-2v2h6v-2h-2v-2.06A9 9 0 0 0 21 11h-2Z" />
-    </svg>
-  );
+  return <Mic aria-hidden="true" className="h-5 w-5" />;
 }
 
 function StopIcon(): JSX.Element {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-      <rect x="6" y="6" width="12" height="12" rx="2" />
-    </svg>
-  );
+  return <Square aria-hidden="true" className="h-5 w-5" fill="currentColor" />;
 }
 
 function PhoneEndIcon(): JSX.Element {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
-      <path d="M21 15.46l-5.27-.61-2.52 2.52a15.07 15.07 0 0 1-6.59-6.59l2.53-2.53L8.54 3H3.03C2.45 13.18 10.82 21.55 21 20.97v-5.51Z" />
-    </svg>
-  );
+  return <PhoneOff aria-hidden="true" className="h-6 w-6" />;
 }
 
 function SettingsIcon(): JSX.Element {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-      <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.61-.22l-2.49 1a7.03 7.03 0 0 0-1.69-.98l-.38-2.65A.49.49 0 0 0 14 1h-4a.49.49 0 0 0-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46a.5.5 0 0 0 .12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65a.5.5 0 0 0-.12.64l2 3.46c.14.24.42.34.61.22l2.49-1c.52.39 1.08.73 1.69.98l.38 2.65c.04.24.25.42.49.42h4c.24 0 .45-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.24.09.51 0 .61-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.65ZM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Z" />
-    </svg>
-  );
+  return <SettingsLucide aria-hidden="true" className="h-5 w-5" />;
 }
 
 function ReplayIcon(): JSX.Element {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
-      <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8Z" />
-    </svg>
-  );
+  return <RotateCcw aria-hidden="true" className="h-4 w-4" />;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -338,34 +309,28 @@ function InterviewStatusBanner({
 }: IStatusBannerProps): JSX.Element | null {
   if (!isActiveSession) return null;
 
-  let icon: string;
   let text: string;
   let bgClass: string;
   let animClass: string;
 
   if (isCompleted) {
-    icon = '✅';
     text = 'Interview complete — view your results below';
     bgClass = 'bg-emerald-50 border-emerald-200 text-emerald-700';
     animClass = '';
   } else if (isSpeaking) {
-    icon = '🔊';
     text = 'AI Interviewer is speaking — please listen...';
     bgClass = 'bg-blue-50 border-accent-blue/30 text-accent-blue';
     animClass = 'animate-pulse';
   } else if (isSubmitting) {
-    icon = '⏳';
     text = 'Processing your answer...';
     bgClass = 'bg-amber-50 border-amber-200 text-amber-700';
     animClass = 'animate-pulse';
   } else if (isListening) {
-    icon = '🎙️';
-    text = 'Your turn — speak now (auto-submits after 2s silence)';
+    text = 'Your turn — speak now, then press the microphone to send your answer';
     bgClass = 'bg-green-50 border-green-200 text-green-700';
     animClass = '';
   } else {
-    icon = '⏸️';
-    text = 'Waiting...';
+    text = 'Press the microphone to start answering';
     bgClass = 'bg-gray-50 border-gray-200 text-gray-500';
     animClass = '';
   }
@@ -380,7 +345,6 @@ function InterviewStatusBanner({
         animClass,
       ].join(' ')}
     >
-      <span className="text-lg" aria-hidden="true">{icon}</span>
       <span>{text}</span>
       {isListening && (
         <span className="flex gap-1" aria-hidden="true">
@@ -546,41 +510,33 @@ function SessionSetupForm({ isLoading, onSubmit }: ISetupFormProps): JSX.Element
         {/* ── Difficulty + Number of questions (side by side, per Figma) ──── */}
         <div className="flex flex-col gap-2.5 sm:flex-row">
           <div className="flex flex-1 flex-col gap-1.5">
-            <label htmlFor="difficulty-select" className="sr-only">
-              Difficulty
-            </label>
-            <select
-              id="difficulty-select"
+            <Select
+              aria-label="Difficulty"
               value={difficulty}
               onChange={(e) => setDifficulty(e.target.value as DifficultyTier | '')}
               disabled={isLoading}
-              className={`${SETUP_INPUT} ${difficulty === '' ? 'text-[#1d1d1d]/50' : ''}`}
-            >
-              <option value="" disabled>
-                Difficulty
-              </option>
-              <option value="ENTRY">Entry</option>
-              <option value="MID">Mid</option>
-              <option value="SENIOR">Senior</option>
-              <option value="LEAD">Lead</option>
-            </select>
+              options={[
+                { value: '', label: 'Difficulty', disabled: true },
+                { value: 'ENTRY', label: 'Entry' },
+                { value: 'MID', label: 'Mid' },
+                { value: 'SENIOR', label: 'Senior' },
+                { value: 'LEAD', label: 'Lead' },
+              ]}
+            />
           </div>
 
           <div className="flex flex-1 flex-col gap-1.5">
-            <label htmlFor="question-count" className="sr-only">
-              Number of questions
-            </label>
-            <input
-              id="question-count"
+            <Input
               type="number"
               min={MIN_QUESTION_COUNT}
               max={MAX_QUESTION_COUNT}
               placeholder="Number of questions"
+              aria-label="Number of questions"
               value={questionCount}
               onChange={(e) => setQuestionCount(e.target.value)}
               disabled={isLoading}
               aria-describedby={isCountOutOfRange ? 'question-count-error' : undefined}
-              className={`${SETUP_INPUT} ${isCountOutOfRange ? INPUT_ERROR : ''}`}
+              className={isCountOutOfRange ? INPUT_ERROR : ''}
             />
           </div>
         </div>
@@ -591,42 +547,37 @@ function SessionSetupForm({ isLoading, onSubmit }: ISetupFormProps): JSX.Element
         )}
 
         {/* ── Optional resume version (fetched from the resume module) ─────── */}
-        <label htmlFor="resume-version-id" className="sr-only">
-          Resume version
-        </label>
-        <select
-          id="resume-version-id"
+        <Select
+          aria-label="Resume version (optional)"
           value={resumeVersionId}
           onChange={(e) => setResumeVersionId(e.target.value)}
           disabled={isLoading}
-          className={`${SETUP_INPUT} ${resumeVersionId === '' ? 'text-[#1d1d1d]/50' : ''}`}
-        >
-          <option value="">
-            {resumeVersions.length > 0
-              ? 'Resume version (optional)'
-              : 'No saved resumes — optional'}
-          </option>
-          {resumeVersions.map((version) => (
-            <option key={version.id} value={version.id}>
-              {version.name}
-            </option>
-          ))}
-        </select>
+          options={[
+            {
+              value: '',
+              label:
+                resumeVersions.length > 0
+                  ? 'Resume version (optional)'
+                  : 'No saved resumes — optional',
+            },
+            ...resumeVersions.map((version) => ({
+              value: version.id,
+              label: version.name,
+            })),
+          ]}
+        />
 
         {/* ── Job Description ───────────────────────────────────────────────── */}
-        <label htmlFor="job-description" className="sr-only">
-          Job description
-        </label>
-        <textarea
-          id="job-description"
+        <Textarea
           rows={4}
           placeholder="Job Description"
+          aria-label="Job description"
           value={jobDescription}
           onChange={(e) => setJobDescription(e.target.value)}
           disabled={isLoading}
           aria-required="true"
           aria-describedby={isJdOverLimit ? 'job-description-error' : undefined}
-          className={`${SETUP_INPUT} min-h-[101px] resize-none ${isJdOverLimit ? INPUT_ERROR : ''}`}
+          className={`min-h-[101px] ${isJdOverLimit ? INPUT_ERROR : ''}`}
         />
         <div className="flex items-start justify-between gap-2">
           {isJdOverLimit ? (
@@ -645,10 +596,10 @@ function SessionSetupForm({ isLoading, onSubmit }: ISetupFormProps): JSX.Element
         </div>
       </div>
 
-      {/* ── Start Interview (dark pill, bottom-right per Figma) ────────────── */}
-      <button type="submit" disabled={isSubmitDisabled} className={`${BTN_START} self-end`}>
-        {isLoading ? 'Starting session…' : 'Start Interview'}
-      </button>
+      {/* ── Create Interview (dark pill, bottom-right per Figma) ──────────── */}
+      <Button type="submit" disabled={isSubmitDisabled} className="self-end">
+        {isLoading ? 'Creating…' : 'Create Interview'}
+      </Button>
     </form>
   );
 }
@@ -688,38 +639,72 @@ function AnswerPanel({
   const isLastQuestion = answeredCount + 1 >= totalCount;
 
   const statusText = isSpeaking
-    ? 'Interviewer is speaking…'
+    ? 'Interviewer is speaking...'
     : isListening
-      ? 'Listening — speak your answer'
-      : isSttSupported
-        ? 'Press the microphone above to answer, or type below.'
-        : 'Type your answer below.';
+      ? 'Listening — speak your answer, then press the microphone to send it.'
+      : isSubmitting
+        ? 'Submitting your answer...'
+        : 'Press the microphone above to answer. Your words appear live in the transcript on the right.';
 
+  // ── Voice flow (the primary experience) ─────────────────────────────────
+  // No textarea and no submit button: the candidate speaks and the live
+  // transcript renders in the right-hand panel. Pressing the microphone in the
+  // call-control bar sends the answer.
+  if (isSttSupported) {
+    return (
+      <div className="flex flex-col gap-4">
+        {permissionDenied && (
+          <p role="alert" className="rounded-lg border border-accent-red/30 bg-accent-red/5 px-4 py-2.5 text-sm text-accent-red">
+            Microphone access was denied. Open your browser&apos;s site settings,
+            set the microphone permission to <strong>Allow</strong>, then reload
+            the page.
+          </p>
+        )}
+
+        <div
+          className={[
+            'flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium transition-colors',
+            isListening
+              ? 'border-green-200 bg-green-50 text-green-700'
+              : isSpeaking
+                ? 'border-accent-blue/30 bg-blue-50 text-accent-blue'
+                : 'border-gray-200 bg-gray-50 text-muted',
+          ].join(' ')}
+          aria-live="polite"
+        >
+          <span>{statusText}</span>
+        </div>
+
+        <ol className="flex flex-col gap-2 text-sm text-muted">
+          <li>1. Listen to the interviewer&apos;s question.</li>
+          <li>2. Press the microphone to start speaking your answer.</li>
+          <li>3. Press the microphone again to send it and move to the next question.</li>
+        </ol>
+
+        <p className="text-xs text-gray-400" aria-live="polite">
+          {answeredCount} of {totalCount} answered
+        </p>
+      </div>
+    );
+  }
+
+  // ── Fallback (no Web Speech support) ─────────────────────────────────────
+  // Some browsers lack speech recognition; keep a typed answer + send button so
+  // the interview is still completable.
   return (
     <div className="flex flex-col gap-4">
       <span aria-live="polite" className="text-xs italic text-muted">
-        {statusText}
+        Speech recognition isn&apos;t available in this browser. Type your answer below.
       </span>
-
-      {permissionDenied && (
-        <p role="alert" className="rounded-lg border border-accent-red/30 bg-accent-red/5 px-4 py-2.5 text-sm text-accent-red">
-          Microphone access was denied. Open your browser&apos;s site settings,
-          set the microphone permission to <strong>Allow</strong>, then reload
-          the page. You can also type your answer below.
-        </p>
-      )}
 
       <div className="flex flex-col gap-2">
         <label htmlFor="answer-draft" className="text-sm font-medium text-ink">
-          Your answer{' '}
-          <span className="text-xs font-normal text-muted">
-            {isListening ? '(transcribing — edit any time)' : '(review or edit before sending)'}
-          </span>
+          Your answer
         </label>
         <textarea
           id="answer-draft"
           rows={6}
-          placeholder="Your spoken answer appears here. You can also type or correct it."
+          placeholder="Type your answer here."
           value={answerDraft}
           onChange={(e) => onChangeDraft(e.target.value)}
           disabled={isSubmitting}
@@ -749,7 +734,7 @@ function AnswerPanel({
         className={`${BTN_PRIMARY} w-full`}
       >
         {isSubmitting
-          ? 'Submitting…'
+          ? 'Submitting...'
           : isLastQuestion
             ? 'Submit & Finish Interview'
             : 'Submit & Next Question'}
@@ -796,7 +781,7 @@ function ScorecardSection({ sessionId, isLoading }: IScorecardSectionProps): JSX
   if (!hasScorecard) {
     return (
       <div className="flex flex-col items-center gap-4 text-center">
-        <p className="text-base font-semibold text-ink">🎉 You completed the interview!</p>
+        <p className="text-base font-semibold text-ink">You completed the interview!</p>
         <p className="text-sm text-muted">
           Generate your performance scorecard with scores across all dimensions.
         </p>
@@ -848,17 +833,20 @@ function ScorecardSection({ sessionId, isLoading }: IScorecardSectionProps): JSX
 function TranscriptPanel({
   messages,
   isLoading,
+  liveAnswer,
 }: {
   messages: ReturnType<typeof deriveChatThread>['messages'];
   isLoading: boolean;
+  liveAnswer?: string | null;
 }): JSX.Element {
   const isEmpty = messages.length === 0;
+  const hasLiveAnswer = (liveAnswer?.trim().length ?? 0) > 0;
 
   return (
     <div className="flex flex-col">
       {isLoading && isEmpty ? (
         <SkeletonCard />
-      ) : isEmpty ? (
+      ) : isEmpty && !hasLiveAnswer ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 py-10 text-center">
           <p className="text-sm font-medium text-ink">No conversation yet</p>
           <p className="max-w-xs text-xs text-muted">
@@ -867,7 +855,11 @@ function TranscriptPanel({
           </p>
         </div>
       ) : (
-        <ChatThread messages={messages} liveRegionLabel="Interview conversation" />
+        <ChatThread
+          messages={messages}
+          liveRegionLabel="Interview conversation"
+          liveAnswer={liveAnswer ?? null}
+        />
       )}
     </div>
   );
@@ -885,12 +877,13 @@ export function InterviewChatPage(): JSX.Element {
     error: storeError,
     createSession,
     openSession,
-    startSession,
     submitAnswer,
     forceEndSession,
     clearError,
     reset,
   } = useInterviewStore();
+
+  const navigate = useNavigate();
 
   // ── Speech hooks ──────────────────────────────────────────────────────────
   const recognition = useSpeechRecognition();
@@ -910,15 +903,14 @@ export function InterviewChatPage(): JSX.Element {
   const prevSpeakingRef = useRef<boolean>(false);
   // Silence detection timer ref.
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Ref to track whether an auto-submit is already in progress.
+  // Ref to track whether a submission is already in progress.
   const autoSubmitInProgressRef = useRef<boolean>(false);
-  // Ref mirror of answerDraft for async access in silence timeout handler.
-  const answerDraftRef = useRef<string>('');
-
-  // Keep the ref in sync with state.
-  useEffect(() => {
-    answerDraftRef.current = answerDraft;
-  }, [answerDraft]);
+  // Safety-net timer that force-opens the mic if text-to-speech gets stuck
+  // (Chrome's "pending until tab refocus" bug) so the candidate can always
+  // start answering without switching tabs.
+  const autoListenFallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Synchronous mirror of recognition.isListening for use inside timers.
+  const isListeningRef = useRef<boolean>(false);
 
   // ── Derive thread from store questions ────────────────────────────────────
   const { messages, currentQuestion, answeredCount, totalCount } =
@@ -932,6 +924,29 @@ export function InterviewChatPage(): JSX.Element {
     }
   };
 
+  // ── Helper: clear the auto-listen safety-net timer ────────────────────────
+  const clearAutoListenFallback = (): void => {
+    if (autoListenFallbackRef.current !== null) {
+      clearTimeout(autoListenFallbackRef.current);
+      autoListenFallbackRef.current = null;
+    }
+  };
+
+  // ── Helper: start a FRESH listening session ───────────────────────────────
+  // Always wipes the previous transcript and draft first so a new answer can
+  // never be concatenated onto the prior one (fixes the "previous answer
+  // appended to the current speech" bug).
+  const beginListening = (): void => {
+    recognition.clearTranscript();
+    setAnswerDraft('');
+    recognition.startListening();
+  };
+
+  // ── Keep a synchronous mirror of the listening flag for timers ────────────
+  useEffect(() => {
+    isListeningRef.current = recognition.isListening;
+  }, [recognition.isListening]);
+
   // ── Helper: internal answer submission (used by both manual & auto) ───────
   const submitCurrentAnswer = async (answerText: string): Promise<void> => {
     if (currentQuestion === null || activeSession === null) return;
@@ -943,6 +958,7 @@ export function InterviewChatPage(): JSX.Element {
     autoSubmitInProgressRef.current = true;
     setIsSubmitting(true);
     clearSilenceTimer();
+    clearAutoListenFallback();
 
     // Stop any capture/playback before submitting.
     if (recognition.isListening) recognition.stopListening();
@@ -956,6 +972,11 @@ export function InterviewChatPage(): JSX.Element {
       answerText: trimmed,
       responseLatencySeconds,
     });
+
+    // Wipe the transcript/draft now that the answer is sent so it can never be
+    // carried over into the next question's spoken answer.
+    recognition.clearTranscript();
+    setAnswerDraft('');
 
     // When the final answer is submitted, re-open the session so its
     // lifecycle state advances to COMPLETED and the scorecard appears.
@@ -974,35 +995,6 @@ export function InterviewChatPage(): JSX.Element {
     }
   }, [recognition.transcript]);
 
-  // ── Silence detection: reset timer on every transcript change ─────────────
-  useEffect(() => {
-    // Only run when actively listening and there is a transcript.
-    if (!recognition.isListening || recognition.transcript.trim().length === 0) {
-      clearSilenceTimer();
-      return;
-    }
-
-    // Reset the silence timer every time the transcript changes.
-    clearSilenceTimer();
-    silenceTimerRef.current = setTimeout(() => {
-      // 2 seconds of silence — auto-submit the current draft.
-      const draft = answerDraftRef.current.trim();
-      if (
-        draft.length > 0 &&
-        !autoSubmitInProgressRef.current &&
-        currentQuestion !== null &&
-        activeSession !== null
-      ) {
-        void submitCurrentAnswer(draft);
-      }
-    }, SILENCE_TIMEOUT_MS);
-
-    return () => {
-      clearSilenceTimer();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recognition.transcript, recognition.isListening]);
-
   // ── On a new current question: stamp time, speak it, then auto-listen ─────
   useEffect(() => {
     if (currentQuestion === null) return;
@@ -1019,14 +1011,34 @@ export function InterviewChatPage(): JSX.Element {
     recognition.clearTranscript();
     setAnswerDraft('');
     clearSilenceTimer();
+    clearAutoListenFallback();
 
     if (synthesis.isSupported) {
       // Speak the question; auto-start the mic once playback finishes.
       pendingAutoListenRef.current = true;
       synthesis.speak(currentQuestion.text);
+
+      // Safety net: if the browser's speech synthesis gets stuck (Chrome's
+      // "pending until the tab is refocused" bug) and the normal
+      // speaking→idle transition never fires, force the mic open after a
+      // generous, length-scaled delay so the candidate can always answer
+      // right away without switching tabs. A legitimately spoken question
+      // finishes well within this window and clears the timer first.
+      const estimatedSpeechMs = Math.min(20000, 2500 + currentQuestion.text.length * 70);
+      autoListenFallbackRef.current = setTimeout(() => {
+        if (
+          pendingAutoListenRef.current &&
+          recognition.isSupported &&
+          !isListeningRef.current
+        ) {
+          pendingAutoListenRef.current = false;
+          synthesis.cancel();
+          beginListening();
+        }
+      }, estimatedSpeechMs);
     } else if (recognition.isSupported) {
       // No TTS — start listening straight away.
-      recognition.startListening();
+      beginListening();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentQuestion?.id]);
@@ -1044,7 +1056,8 @@ export function InterviewChatPage(): JSX.Element {
       !recognition.isListening
     ) {
       pendingAutoListenRef.current = false;
-      recognition.startListening();
+      clearAutoListenFallback();
+      beginListening();
     }
   }, [synthesis.isSpeaking, recognition]);
 
@@ -1052,10 +1065,15 @@ export function InterviewChatPage(): JSX.Element {
   useEffect(() => {
     return () => {
       clearSilenceTimer();
+      clearAutoListenFallback();
     };
   }, []);
 
   // ── Setup submit handler ──────────────────────────────────────────────────
+  // Creates the session and saves it, then sends the user to the Sessions tab.
+  // The interview itself is started MANUALLY from a session (a fresh user
+  // gesture), which is the reliable way to get the browser to grant microphone
+  // capture for the voice flow.
   const handleSetupSubmit = async (params: {
     difficulty: DifficultyTier;
     questionCount: number;
@@ -1065,9 +1083,6 @@ export function InterviewChatPage(): JSX.Element {
     setSetupError(null);
     clearError();
 
-    // Read the freshest store error after each await — `storeError` from the
-    // render closure is stale and would mask the real backend message
-    // (e.g. a 401 "Invalid or expired authentication token").
     const latestError = (fallback: string): string =>
       useInterviewStore.getState().error?.message ?? fallback;
 
@@ -1080,28 +1095,20 @@ export function InterviewChatPage(): JSX.Element {
         : {}),
     });
     if (created === null) {
-      setSetupError(latestError('Failed to create session. Please try again.'));
+      setSetupError(latestError('Failed to create interview. Please try again.'));
       return;
     }
 
-    const detail = await openSession(created.id);
-    if (detail === null) {
-      setSetupError(latestError('Failed to open session. Please try again.'));
-      return;
-    }
+    // Clear any stale active session so returning to the Simulator shows the
+    // create form again rather than a previously-open interview.
+    useInterviewStore.setState({
+      activeSession: null,
+      activeQuestions: [],
+      scorecard: null,
+    });
 
-    const questions = await startSession(created.id);
-    if (questions === null) {
-      setSetupError(latestError('Failed to start session. Please try again.'));
-      return;
-    }
-
-    // Fresh session — reset all per-question tracking.
-    presentedAtMap.current.clear();
-    prevQuestionIdRef.current = null;
-    pendingAutoListenRef.current = false;
-    clearSilenceTimer();
-    setAnswerDraft('');
+    // Hand off to the Sessions tab, where the user starts the interview.
+    navigate('/interview/sessions');
   };
 
   // ── Answer submit handler (manual button press) ───────────────────────────
@@ -1109,13 +1116,19 @@ export function InterviewChatPage(): JSX.Element {
     await submitCurrentAnswer(answerDraft);
   };
 
-  // ── Mic + playback controls ───────────────────────────────────────────────
+  // ── Mic control — doubles as the "send answer" button ─────────────────────
+  // Pressing the mic while listening stops capture AND submits the spoken
+  // answer; pressing it while idle cancels any in-flight question playback and
+  // starts listening immediately so the candidate can answer right away.
   const handleMicToggle = (): void => {
     if (recognition.isListening) {
       recognition.stopListening();
-      clearSilenceTimer();
+      void submitCurrentAnswer(recognition.transcriptRef.current);
     } else {
-      recognition.startListening();
+      if (synthesis.isSpeaking) synthesis.cancel();
+      pendingAutoListenRef.current = false;
+      clearAutoListenFallback();
+      beginListening();
     }
   };
 
@@ -1137,6 +1150,7 @@ export function InterviewChatPage(): JSX.Element {
     if (recognition.isListening) recognition.stopListening();
     if (synthesis.isSpeaking) synthesis.cancel();
     clearSilenceTimer();
+    clearAutoListenFallback();
     pendingAutoListenRef.current = false;
 
     // Force-end the session on the backend — fills unanswered questions
@@ -1163,6 +1177,24 @@ export function InterviewChatPage(): JSX.Element {
   const showAnswerPanel = isActiveSession && !isCompleted && currentQuestion !== null;
   const permissionDenied = recognition.permission === 'denied';
 
+  // Surface speech-recognition failures (other than the dedicated permission
+  // banner) so a silently-failing mic isn't mistaken for "nothing happening".
+  const recognitionErrorMessage = ((): string | null => {
+    if (recognition.error === null || permissionDenied) return null;
+    switch (recognition.error) {
+      case 'audio-capture':
+        return 'No microphone was detected, or capture could not start. Check that a mic is connected and allowed, then press the microphone to try again.';
+      case 'network':
+        return 'Speech recognition lost its network connection. Check your internet and press the microphone to try again.';
+      case 'no-speech':
+        return 'No speech was detected. Press the microphone and speak clearly to answer.';
+      case 'aborted':
+        return null;
+      default:
+        return 'Speech recognition ran into a problem. Press the microphone to try again, or type your answer if the issue persists.';
+    }
+  })();
+
   // ── Stage title + control wiring ──────────────────────────────────────────
   const difficultyLabel = activeSession?.difficultyTier ?? null;
   const stageTitle = isActiveSession
@@ -1171,8 +1203,7 @@ export function InterviewChatPage(): JSX.Element {
 
   const controls: ICallControlsProps = {
     isListening: recognition.isListening,
-    micDisabled:
-      !showAnswerPanel || synthesis.isSpeaking || isSubmitting || !recognition.isSupported,
+    micDisabled: !showAnswerPanel || isSubmitting || !recognition.isSupported,
     endDisabled: !isActiveSession || isCompleted || isEndingSession,
     replayDisabled: currentQuestion === null || synthesis.isSpeaking,
     isTtsSupported: synthesis.isSupported,
@@ -1209,6 +1240,15 @@ export function InterviewChatPage(): JSX.Element {
           </button>
         </div>
       )}
+      {recognitionErrorMessage !== null && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-800"
+        >
+          {recognitionErrorMessage}
+        </div>
+      )}
 
       {/* ── Top: interview workspace (participants + call controls) ────────── */}
       <InterviewStage
@@ -1224,9 +1264,9 @@ export function InterviewChatPage(): JSX.Element {
       />
 
       {/* ── Bottom: setup/answer (left) + transcript (right) ───────────────── */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
         {/* Left panel */}
-        <section className="rounded-2xl bg-surface p-6 shadow-panel">
+        <section className="self-start rounded-2xl bg-surface p-6 shadow-panel">
           <h2 className="mb-4 font-heading text-base font-bold text-ink">
             {isCompleted ? 'Results' : isActiveSession ? 'Your Answer' : 'Interview Setup'}
           </h2>
@@ -1269,7 +1309,11 @@ export function InterviewChatPage(): JSX.Element {
           <h2 className="mb-4 font-heading text-base font-bold text-ink">
             Interview Transcript
           </h2>
-          <TranscriptPanel messages={messages} isLoading={isLoading} />
+          <TranscriptPanel
+            messages={messages}
+            isLoading={isLoading}
+            liveAnswer={showAnswerPanel && recognition.isListening ? answerDraft : null}
+          />
         </section>
       </div>
     </main>

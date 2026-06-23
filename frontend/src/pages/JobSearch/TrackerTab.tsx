@@ -3,6 +3,7 @@ import type { JSX } from 'react';
 
 import { ApplicationDetailDialog } from '../../components/JobSearch/ApplicationDetailDialog';
 import { KanbanColumn } from '../../components/JobSearch/KanbanColumn';
+import { KpiCard } from '../../components/KpiCard';
 import { useJobSearchStore } from '../../stores/jobsearch.store';
 import type { IApplication, Stage } from '../../types/jobsearch.types';
 
@@ -66,6 +67,19 @@ export function TrackerTab(): JSX.Element {
     return grouped;
   }, [applications]);
 
+  /**
+   * Pipeline KPIs derived from the current applications. `Active` counts
+   * everything still in motion (Applied + Interviewing); `Response Rate` is the
+   * share of applications that progressed beyond the Applied stage.
+   */
+  const metrics = useMemo(() => {
+    const total = applications.length;
+    const interviewing = columnData.Interviewing.length;
+    const offers = columnData.Offer.length;
+    const active = columnData.Applied.length + interviewing;
+    return { total, active, interviewing, offers };
+  }, [applications, columnData]);
+
   const handleDrop = useCallback(
     (applicationId: string, targetStage: Stage) => {
       // Only update if the stage is actually different
@@ -94,6 +108,17 @@ export function TrackerTab(): JSX.Element {
 
   return (
     <>
+      {/* KPI row — application pipeline metrics */}
+      <section
+        aria-label="Application pipeline metrics"
+        className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+      >
+        <KpiCard label="Total Applications" value={metrics.total} tone="blue" />
+        <KpiCard label="Active" value={metrics.active} tone="yellow" />
+        <KpiCard label="Interviewing" value={metrics.interviewing} tone="red" />
+        <KpiCard label="Offers" value={metrics.offers} tone="blue" />
+      </section>
+
       <div className="flex gap-4 overflow-x-auto pb-4">
         {STAGES.map((stage) => (
           <KanbanColumn
